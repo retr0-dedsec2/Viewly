@@ -1,0 +1,155 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import Sidebar from '@/components/Sidebar'
+import MusicPlayer from '@/components/MusicPlayer'
+import AIChat from '@/components/AIChat'
+import MainContent from '@/components/MainContent'
+import MobileMenu from '@/components/MobileMenu'
+import MobileHeader from '@/components/MobileHeader'
+import { Music } from '@/types/music'
+import { convertYouTubeToMusic } from '@/lib/youtube'
+
+export default function Home() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [currentTrack, setCurrentTrack] = useState<Music | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playlist, setPlaylist] = useState<Music[]>([])
+  const [showAIChat, setShowAIChat] = useState(false)
+  const [currentIndex, setCurrentIndex] = useState(-1)
+  const audioRef = useRef<HTMLAudioElement>(null)
+
+  // Load popular YouTube music on mount
+  useEffect(() => {
+    const loadPopularMusic = async () => {
+      try {
+        const response = await fetch('/api/youtube/popular')
+        const data = await response.json()
+
+        if (data.items) {
+          const musicTracks = data.items.map((item: any) => convertYouTubeToMusic(item))
+          setPlaylist(musicTracks)
+        }
+      } catch (error) {
+        console.error('Error loading popular music:', error)
+        // Fallback to sample tracks if API fails
+        const sampleTracks: Music[] = [
+          {
+            id: 'kJQP7kiw5Fk',
+            title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
+            artist: 'Luis Fonsi',
+            album: 'Despacito',
+            duration: 228,
+            cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop',
+            videoId: 'kJQP7kiw5Fk',
+          },
+        ]
+        setPlaylist(sampleTracks)
+      }
+    }
+
+    loadPopularMusic()
+  }, [])
+
+  const handlePlay = (track: Music) => {
+    const index = playlist.findIndex((t) => t.id === track.id)
+    setCurrentIndex(index)
+    setCurrentTrack(track)
+    setIsPlaying(true)
+  }
+
+  const handleSearchResults = (results: Music[]) => {
+    setPlaylist(results)
+  }
+
+  const handleNext = () => {
+    if (playlist.length > 0 && currentIndex >= 0) {
+      const nextIndex = (currentIndex + 1) % playlist.length
+      setCurrentIndex(nextIndex)
+      setCurrentTrack(playlist[nextIndex])
+      setIsPlaying(true)
+    }
+  }
+
+  const handlePrevious = () => {
+    if (playlist.length > 0 && currentIndex >= 0) {
+      const prevIndex = currentIndex === 0 ? playlist.length - 1 : currentIndex - 1
+      setCurrentIndex(prevIndex)
+      setCurrentTrack(playlist[prevIndex])
+      setIsPlaying(true)
+    }
+  }
+
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying)
+    if (audioRef.current && !currentTrack?.videoId) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
+      }
+    }
+  }
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-gradient-to-b from-spotify-dark via-spotify-gray to-black">
+      {/* Mobile Header */}
+      <MobileHeader onMenuClick={() => setMobileMenuOpen(true)} />
+      
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block">
+        <Sidebar />
+      </div>
+      
+      {/* Mobile Menu */}
+      <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col pt-16 lg:pt-0 lg:ml-64 pb-20 lg:pb-24">
+        <MainContent
+          playlist={playlist}
+          onPlay={handlePlay}
+          currentTrack={currentTrack}
+          onSearchResults={handleSearchResults}
+        />
+      </div>
+      
+      {/* Music Player */}
+      <MusicPlayer
+        track={currentTrack}
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlayPause}
+        audioRef={audioRef}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+      />
+      
+      {/* AI Chat */}
+      {showAIChat && (
+        <AIChat onClose={() => setShowAIChat(false)} />
+      )}
+      
+      {/* AI Chat Toggle Button */}
+      <button
+        onClick={() => setShowAIChat(!showAIChat)}
+        className="fixed bottom-28 lg:bottom-32 right-4 lg:right-6 w-12 h-12 lg:w-14 lg:h-14 bg-spotify-green hover:bg-green-600 active:scale-95 rounded-full flex items-center justify-center shadow-2xl z-50 transition-all"
+        aria-label="Toggle AI Assistant"
+      >
+        <svg
+          className="w-5 h-5 lg:w-6 lg:h-6 text-white"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+          />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
