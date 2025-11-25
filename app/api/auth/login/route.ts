@@ -1,50 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { authenticateUser } from '@/lib/auth-db'
-import { generateToken } from '@/lib/auth'
+// app/api/auth/login/route.ts
+import { NextResponse } from "next/server";
+import Parse from "@/lib/parseServer";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { email, password } = await request.json()
+    const body = await req.json();
+    const { email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: "Email et mot de passe obligatoires" },
         { status: 400 }
-      )
+      );
     }
 
-    // Authenticate user
-    const user = await authenticateUser(email, password)
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
-    }
+    const user = await Parse.User.logIn(email, password);
 
-    // Generate token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      username: user.username,
-    })
-
-    return NextResponse.json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        avatar: user.avatar,
-        createdAt: user.createdAt,
-      },
-    })
-  } catch (error) {
-    console.error('Login error:', error)
+    // Tu peux générer un token JWT ici si tu veux
     return NextResponse.json(
-      { error: 'Failed to login' },
-      { status: 500 }
-    )
+      {
+        id: user.id,
+        email: user.get("email"),
+        name: user.get("name") ?? null,
+        sessionToken: user.getSessionToken?.(),
+      },
+      { status: 200 }
+    );
+  } catch (err: any) {
+    console.error("Login error:", err);
+    return NextResponse.json(
+      { error: "Identifiants invalides" },
+      { status: 401 }
+    );
   }
 }
-

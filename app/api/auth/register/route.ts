@@ -1,63 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
-import { createUser, findUserByEmail } from '@/lib/auth-db'
-import { generateToken } from '@/lib/auth'
+// app/api/auth/register/route.ts
+import { NextResponse } from "next/server";
+import Parse from "@/lib/parseServer";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { email, username, password } = await request.json()
+    const body = await req.json();
+    const { email, password, name } = body;
 
-    if (!email || !username || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email, username, and password are required' },
+        { error: "Email et mot de passe obligatoires" },
         { status: 400 }
-      )
+      );
     }
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      )
-    }
+    // Vérifier si l'utilisateur existe déjà
+    const query = new Parse.Query(Parse.User);
+    query.equalTo("username", email);
+    const existing = await query.first({ useMasterKey: false });
 
-    // Check if user already exists
-    const existingUser = await findUserByEmail(email)
-    if (existingUser) {
+    if (existing) {
       return NextResponse.json(
-        { error: 'User with this email already exists' },
+        { error: "Un utilisateur avec cet email existe déjà" },
         { status: 409 }
-      )
+      );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
+    // Créer un utilisateur Parse
+    const user = new Parse.User();
+    user.set("username", email);
+    user.set("email", email);
+    user.set("password", password);
+    if (name) user.set("name", name);
 
-    // Create user
-    const user = await createUser(email, username, hashedPassword)
+    const result = await user.signUp();
 
-    // Generate token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      username: user.username,
-    })
-
-    return NextResponse.json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        createdAt: user.createdAt,
-      },
-    })
-  } catch (error) {
-    console.error('Registration error:', error)
     return NextResponse.json(
-      { error: 'Failed to register user' },
+      {
+        id: result.id,
+        email: result.get("email"),
+        name: result.get("name") ?? null,
+      },
+      { status: 201 }
+    );
+  } catch (err: any) {
+    console.error("Registration error:", err);
+    return NextResponse.json(
+      { error: err.message || "Erreur serveur" },
       { status: 500 }
-    )
+    );
   }
 }
-
