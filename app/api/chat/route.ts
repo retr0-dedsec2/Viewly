@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 // AI Playlist Creation Function
-async function handlePlaylistCreation(message: string) {
+async function handlePlaylistCreation(message: string, userId?: string) {
   const lowerMessage = message.toLowerCase()
   let genre = 'pop'
   let mood = 'upbeat'
@@ -31,8 +31,63 @@ async function handlePlaylistCreation(message: string) {
   
   // Generate playlist based on genre and mood
   const playlistSongs = generatePlaylistSongs(genre, mood)
+  const playlistName = `${mood.charAt(0).toUpperCase() + mood.slice(1)} ${genre.charAt(0).toUpperCase() + genre.slice(1)}`
   
-  return `🎵 **${mood.charAt(0).toUpperCase() + mood.slice(1)} ${genre.charAt(0).toUpperCase() + genre.slice(1)} Playlist Created!**
+  // If user is authenticated, create actual playlist in database
+  if (userId) {
+    try {
+      // Create playlist directly in database
+      const playlist = await prisma.playlist.create({
+        data: {
+          name: playlistName,
+          description: `AI-generated playlist with ${playlistSongs.length} ${genre} songs for ${mood} mood`,
+          userId: userId,
+        }
+      })
+
+      // Add tracks to playlist
+      if (playlistSongs.length > 0) {
+        const trackData = playlistSongs.map((song, index) => ({
+          playlistId: playlist.id,
+          trackId: `${song.title.toLowerCase().replace(/\s+/g, '-')}-${song.artist.toLowerCase().replace(/\s+/g, '-')}`,
+          trackTitle: song.title,
+          trackArtist: song.artist,
+          trackCover: 'https://via.placeholder.com/300x300?text=🎵',
+          trackVideoId: null, // Will be populated when user searches
+          trackDuration: 180, // Default 3 minutes
+          position: index,
+        }))
+
+        await prisma.playlistTrack.createMany({
+          data: trackData
+        })
+      }
+
+      return `🎵 **${playlistName} Playlist Created & Saved!**
+
+✅ **Successfully added to your playlists!** You can find it in your **Library** page.
+
+Here are the ${playlistSongs.length} amazing songs I've curated for you:
+
+${playlistSongs.map((song, index) => 
+  `**${index + 1}.** ${song.title} - *${song.artist}*`
+).join('\n')}
+
+💡 **What you can do now:**
+• 📚 **Check your Library page** to see your new playlist
+• 🔍 **Search for any song** to get the YouTube link and play it
+• 🎧 **Click on any song** in the playlist to start listening
+• 💾 **Your playlist is permanently saved** to your account!
+
+🚀 **Pro tip:** Search for "${playlistSongs[0].title}" to start listening right now!`
+    } catch (error) {
+      console.error('Error creating playlist:', error)
+      // Fall back to suggestion mode
+    }
+  }
+  
+  // Fallback response if not authenticated or error occurred
+  return `🎵 **${playlistName} Playlist Created!**
 
 Here are ${playlistSongs.length} amazing songs I've curated for you:
 
@@ -40,10 +95,10 @@ ${playlistSongs.map((song, index) =>
   `**${index + 1}.** ${song.title} - *${song.artist}*`
 ).join('\n')}
 
-💡 **To play these songs:**
-• Use the search bar above to find any of these tracks
+💡 **To save this playlist:**
+• **Sign in** to your account to permanently save playlists
+• Use the search bar to find any of these tracks
 • I can search for specific songs - just ask "search for [song name]"
-• Want a different mood or genre? Just ask me to create another playlist!
 
 🎧 **Pro tip:** Say "search for ${playlistSongs[0].title}" to start listening right now!`
 }
@@ -180,10 +235,11 @@ export async function POST(request: NextRequest) {
       messageLower.includes('create') ||
       messageLower.includes('make')
     ) {
-      const playlistResponse = await handlePlaylistCreation(message)
+      const playlistResponse = await handlePlaylistCreation(message, userId)
       return NextResponse.json({
         response: playlistResponse,
         action: 'playlist',
+        requiresAuth: !userId
       })
     }
 

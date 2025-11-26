@@ -42,11 +42,18 @@ export default function AIChat({ onClose, onSearchRequest }: AIChatProps) {
     setIsLoading(true)
 
     try {
+      // Get auth token if user is logged in
+      const token = localStorage.getItem('auth_token')
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ message: userInput }),
       })
 
