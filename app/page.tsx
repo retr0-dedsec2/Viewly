@@ -97,7 +97,7 @@ export default function Home() {
       <MobileHeader onMenuClick={() => setMobileMenuOpen(true)} />
       
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:z-10">
         <Sidebar />
       </div>
       
@@ -105,7 +105,7 @@ export default function Home() {
       <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col pt-16 lg:pt-0 lg:ml-64 pb-20 lg:pb-24">
+      <div className="flex-1 flex flex-col pt-16 lg:pt-0 lg:pl-64 pb-20 lg:pb-24">
         <MainContent
           playlist={playlist}
           onPlay={handlePlay}
