@@ -101,3 +101,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+// Delete playlist
+export async function DELETE(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authorization required' }, { status: 401 })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const playlistId = searchParams.get('id')
+
+    if (!playlistId) {
+      return NextResponse.json({ error: 'Playlist ID is required' }, { status: 400 })
+    }
+
+    // Check if playlist belongs to user
+    const playlist = await prisma.playlist.findFirst({
+      where: {
+        id: playlistId,
+        userId: decoded.userId
+      }
+    })
+
+    if (!playlist) {
+      return NextResponse.json({ error: 'Playlist not found' }, { status: 404 })
+    }
+
+    // Delete playlist (tracks will be deleted automatically due to CASCADE)
+    await prisma.playlist.delete({
+      where: { id: playlistId }
+    })
+
+    return NextResponse.json({ message: 'Playlist deleted successfully!' })
+  } catch (error) {
+    console.error('Delete playlist error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

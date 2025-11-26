@@ -29,40 +29,130 @@ export default function LibraryPage() {
       return
     }
 
-    // Load playlists from localStorage
-    const stored = localStorage.getItem(`playlists_${user?.id}`)
-    if (stored) {
-      setPlaylists(JSON.parse(stored))
-    }
+    // Load playlists from database API
+    fetchPlaylists()
   }, [isAuthenticated, user, router])
 
-  const createPlaylist = () => {
-    if (!newPlaylistName.trim()) return
+  const fetchPlaylists = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      if (!token) return
 
-    const newPlaylist = {
-      id: Date.now().toString(),
-      name: newPlaylistName,
-      tracks: [] as Music[],
-    }
+      const response = await fetch('/api/playlists', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
 
-    const updated = [...playlists, newPlaylist]
-    setPlaylists(updated)
-    if (user) {
-      localStorage.setItem(`playlists_${user.id}`, JSON.stringify(updated))
+      if (response.ok) {
+        const data = await response.json()
+        // Transform database playlists to match the expected format
+        const formattedPlaylists = data.playlists.map((playlist: any) => ({
+          id: playlist.id,
+          name: playlist.name,
+          tracks: playlist.tracks.map((track: any) => ({
+            id: track.trackId,
+            title: track.trackTitle,
+            artist: track.trackArtist,
+            cover: track.trackCover,
+            videoId: track.trackVideoId,
+            duration: track.trackDuration,
+          }))
+        }))
+        setPlaylists(formattedPlaylists)
+      }
+    } catch (error) {
+      console.error('Error fetching playlists:', error)
+      // Fallback to localStorage
+      const stored = localStorage.getItem(`playlists_${user?.id}`)
+      if (stored) {
+        setPlaylists(JSON.parse(stored))
+      }
     }
-    setNewPlaylistName('')
-    setShowCreateForm(false)
-    setSelectedPlaylist(newPlaylist.id)
   }
 
-  const deletePlaylist = (id: string) => {
-    const updated = playlists.filter((p) => p.id !== id)
-    setPlaylists(updated)
-    if (user) {
-      localStorage.setItem(`playlists_${user.id}`, JSON.stringify(updated))
+  const createPlaylist = async () => {
+    if (!newPlaylistName.trim()) return
+
+    try {
+      const token = localStorage.getItem('auth_token')
+      if (!token) return
+
+      const response = await fetch('/api/playlists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newPlaylistName,
+          description: `Created manually by user`,
+          tracks: []
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Refresh playlists from database
+        fetchPlaylists()
+        setNewPlaylistName('')
+        setShowCreateForm(false)
+        setSelectedPlaylist(data.playlist.id)
+      } else {
+        console.error('Failed to create playlist')
+      }
+    } catch (error) {
+      console.error('Error creating playlist:', error)
+      // Fallback to localStorage method
+      const newPlaylist = {
+        id: Date.now().toString(),
+        name: newPlaylistName,
+        tracks: [] as Music[],
+      }
+
+      const updated = [...playlists, newPlaylist]
+      setPlaylists(updated)
+      if (user) {
+        localStorage.setItem(`playlists_${user.id}`, JSON.stringify(updated))
+      }
+      setNewPlaylistName('')
+      setShowCreateForm(false)
+      setSelectedPlaylist(newPlaylist.id)
     }
-    if (selectedPlaylist === id) {
-      setSelectedPlaylist(null)
+  }
+
+  const deletePlaylist = async (id: string) => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      if (!token) return
+
+      const response = await fetch(`/api/playlists?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        // Refresh playlists from database
+        fetchPlaylists()
+        if (selectedPlaylist === id) {
+          setSelectedPlaylist(null)
+        }
+      } else {
+        console.error('Failed to delete playlist')
+      }
+    } catch (error) {
+      console.error('Error deleting playlist:', error)
+      // Fallback to localStorage method
+      const updated = playlists.filter((p) => p.id !== id)
+      setPlaylists(updated)
+      if (user) {
+        localStorage.setItem(`playlists_${user.id}`, JSON.stringify(updated))
+      }
+      if (selectedPlaylist === id) {
+        setSelectedPlaylist(null)
+      }
     }
   }
 
