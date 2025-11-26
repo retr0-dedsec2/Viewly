@@ -10,13 +10,14 @@ interface Message {
 
 interface AIChatProps {
   onClose: () => void
+  onSearchRequest?: (query: string) => void
 }
 
-export default function AIChat({ onClose }: AIChatProps) {
+export default function AIChat({ onClose, onSearchRequest }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hi! I'm your AI music assistant. I can help you discover music, create playlists, and answer questions about songs. What would you like to know?",
+      content: "🎵 Hi! I'm your AI music assistant. I can help you:\n\n• **Create custom playlists** - \"Make a workout playlist\"\n• **Search for songs** - \"Find songs by Taylor Swift\"\n• **Get recommendations** - \"Suggest some chill music\"\n• **Discover new music** - \"What's trending?\"\n\nWhat would you like to do? 🎶",
     },
   ])
   const [input, setInput] = useState('')
@@ -55,6 +56,14 @@ export default function AIChat({ onClose }: AIChatProps) {
         ...prev,
         { role: 'assistant', content: data.response },
       ])
+
+      // Handle AI actions
+      if (data.action === 'search' && data.query && onSearchRequest) {
+        // Trigger search in parent component
+        setTimeout(() => {
+          onSearchRequest(data.query)
+        }, 1000) // Small delay to show the AI response first
+      }
     } catch (error) {
       console.error('Error sending message:', error)
       setMessages((prev) => [
@@ -160,8 +169,29 @@ export default function AIChat({ onClose }: AIChatProps) {
             <Send size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-2 text-center">
-          Free AI Assistant • Powered by OpenAI
+        {/* Quick Action Buttons */}
+        <div className="flex flex-wrap gap-2 mt-3 mb-2">
+          <button
+            onClick={() => setInput('Create a workout playlist')}
+            className="px-3 py-1 bg-spotify-green/20 text-spotify-green rounded-full text-xs hover:bg-spotify-green/30 transition-colors"
+          >
+            Workout Playlist
+          </button>
+          <button
+            onClick={() => setInput('Make a chill playlist')}
+            className="px-3 py-1 bg-spotify-green/20 text-spotify-green rounded-full text-xs hover:bg-spotify-green/30 transition-colors"
+          >
+            Chill Vibes
+          </button>
+          <button
+            onClick={() => setInput('Search for trending songs')}
+            className="px-3 py-1 bg-spotify-green/20 text-spotify-green rounded-full text-xs hover:bg-spotify-green/30 transition-colors"
+          >
+            Trending
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 text-center">
+          Free AI Assistant • Smart Music Discovery
         </p>
       </div>
     </div>

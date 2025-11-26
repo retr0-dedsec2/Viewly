@@ -62,6 +62,20 @@ export default function Home() {
     setPlaylist(results)
   }
 
+  const handleAISearch = async (query: string) => {
+    try {
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`)
+      const data = await response.json()
+      
+      if (data.items) {
+        const musicTracks = data.items.map((item: any) => convertYouTubeToMusic(item))
+        setPlaylist(musicTracks)
+      }
+    } catch (error) {
+      console.error('Error searching via AI:', error)
+    }
+  }
+
   const handleNext = () => {
     if (playlist.length > 0 && currentIndex >= 0) {
       const nextIndex = (currentIndex + 1) % playlist.length
@@ -126,7 +140,10 @@ export default function Home() {
       
       {/* AI Chat */}
       {showAIChat && (
-        <AIChat onClose={() => setShowAIChat(false)} />
+        <AIChat 
+          onClose={() => setShowAIChat(false)} 
+          onSearchRequest={handleAISearch}
+        />
       )}
       
       {/* AI Chat Toggle Button */}
