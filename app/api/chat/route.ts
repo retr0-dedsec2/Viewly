@@ -70,19 +70,61 @@ ${playlistSongs.map((song, index) =>
 
     console.log(`Playlist created with ID: ${playlist.id}`)
 
-    // Add tracks to playlist
+    // Add tracks to playlist with YouTube search
     if (playlistSongs.length > 0) {
-      const trackData = playlistSongs.map((song, index) => ({
-        playlistId: playlist.id,
-        trackId: `${song.title.toLowerCase().replace(/\s+/g, '-')}-${song.artist.toLowerCase().replace(/\s+/g, '-')}`,
-        trackTitle: song.title,
-        trackArtist: song.artist,
-        trackCover: 'https://via.placeholder.com/300x300?text=🎵',
-        trackVideoId: null, // Will be populated when user searches
-        trackDuration: 180, // Default 3 minutes
-        position: index,
-      }))
+      const trackDataPromises = playlistSongs.map(async (song, index) => {
+        let videoId = null
+        let cover = 'https://via.placeholder.com/300x300?text=🎵'
+        let duration = 180
 
+        // Try to get YouTube video ID
+        try {
+          const searchQuery = `${song.title} ${song.artist}`
+          const searchResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&maxResults=1&key=${process.env.YOUTUBE_API_KEY}`)
+          
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json()
+            if (searchData.items && searchData.items.length > 0) {
+              const video = searchData.items[0]
+              videoId = video.id.videoId
+              cover = video.snippet.thumbnails?.medium?.url || cover
+              
+              // Get video duration
+              const videoResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${process.env.YOUTUBE_API_KEY}`)
+              if (videoResponse.ok) {
+                const videoData = await videoResponse.json()
+                if (videoData.items && videoData.items.length > 0) {
+                  const durationISO = videoData.items[0].contentDetails.duration
+                  // Convert ISO 8601 duration to seconds (PT4M33S -> 273)
+                  const match = durationISO.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+                  if (match) {
+                    const hours = parseInt(match[1]) || 0
+                    const minutes = parseInt(match[2]) || 0
+                    const seconds = parseInt(match[3]) || 0
+                    duration = hours * 3600 + minutes * 60 + seconds
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.log(`Could not fetch YouTube data for ${song.title} - ${song.artist}`)
+        }
+
+        return {
+          playlistId: playlist.id,
+          trackId: `${song.title.toLowerCase().replace(/\s+/g, '-')}-${song.artist.toLowerCase().replace(/\s+/g, '-')}`,
+          trackTitle: song.title,
+          trackArtist: song.artist,
+          trackCover: cover,
+          trackVideoId: videoId,
+          trackDuration: duration,
+          position: index,
+        }
+      })
+
+      const trackData = await Promise.all(trackDataPromises)
+      
       await prisma.playlistTrack.createMany({
         data: trackData
       })
