@@ -33,41 +33,62 @@ async function handlePlaylistCreation(message: string, userId?: string) {
   const playlistSongs = generatePlaylistSongs(genre, mood)
   const playlistName = `${mood.charAt(0).toUpperCase() + mood.slice(1)} ${genre.charAt(0).toUpperCase() + genre.slice(1)}`
   
+  // If user is not authenticated, return suggestion only
+  if (!userId) {
+    return `🎵 **${playlistName} Playlist Suggestions**
+
+Here are ${playlistSongs.length} amazing songs I've curated for you:
+
+${playlistSongs.map((song, index) => 
+  `**${index + 1}.** ${song.title} - *${song.artist}*`
+).join('\n')}
+
+⚠️ **To save this as an actual playlist:**
+• **Sign in** to your account first
+• Then ask me to create the playlist again
+• I'll permanently save it to your library!
+
+🔍 **For now, you can:**
+• Use the search bar to find any of these tracks
+• Ask me to search for specific songs: "search for [song name]"
+
+🎧 **Pro tip:** Say "search for ${playlistSongs[0].title}" to start listening right now!`
+  }
+  
   // If user is authenticated, create actual playlist in database
-  if (userId) {
-    try {
-      console.log(`Creating playlist for user: ${userId}, name: ${playlistName}`)
-      
-      // Create playlist directly in database
-      const playlist = await prisma.playlist.create({
-        data: {
-          name: playlistName,
-          description: `AI-generated playlist with ${playlistSongs.length} ${genre} songs for ${mood} mood`,
-          userId: userId,
-        }
-      })
-
-      console.log(`Playlist created with ID: ${playlist.id}`)
-
-      // Add tracks to playlist
-      if (playlistSongs.length > 0) {
-        const trackData = playlistSongs.map((song, index) => ({
-          playlistId: playlist.id,
-          trackId: `${song.title.toLowerCase().replace(/\s+/g, '-')}-${song.artist.toLowerCase().replace(/\s+/g, '-')}`,
-          trackTitle: song.title,
-          trackArtist: song.artist,
-          trackCover: 'https://via.placeholder.com/300x300?text=🎵',
-          trackVideoId: null, // Will be populated when user searches
-          trackDuration: 180, // Default 3 minutes
-          position: index,
-        }))
-
-        await prisma.playlistTrack.createMany({
-          data: trackData
-        })
+  try {
+    console.log(`Creating playlist for user: ${userId}, name: ${playlistName}`)
+    
+    // Create playlist directly in database
+    const playlist = await prisma.playlist.create({
+      data: {
+        name: playlistName,
+        description: `AI-generated playlist with ${playlistSongs.length} ${genre} songs for ${mood} mood`,
+        userId: userId,
       }
+    })
 
-      return `🎵 **${playlistName} Playlist Created & Saved!**
+    console.log(`Playlist created with ID: ${playlist.id}`)
+
+    // Add tracks to playlist
+    if (playlistSongs.length > 0) {
+      const trackData = playlistSongs.map((song, index) => ({
+        playlistId: playlist.id,
+        trackId: `${song.title.toLowerCase().replace(/\s+/g, '-')}-${song.artist.toLowerCase().replace(/\s+/g, '-')}`,
+        trackTitle: song.title,
+        trackArtist: song.artist,
+        trackCover: 'https://via.placeholder.com/300x300?text=🎵',
+        trackVideoId: null, // Will be populated when user searches
+        trackDuration: 180, // Default 3 minutes
+        position: index,
+      }))
+
+      await prisma.playlistTrack.createMany({
+        data: trackData
+      })
+    }
+
+    return `🎵 **${playlistName} Playlist Created & Saved!**
 
 ✅ **Successfully added to your playlists!** You can find it in your **Library** page.
 
@@ -84,27 +105,30 @@ ${playlistSongs.map((song, index) =>
 • 💾 **Your playlist is permanently saved** to your account!
 
 🚀 **Pro tip:** Search for "${playlistSongs[0].title}" to start listening right now!`
-    } catch (error) {
-      console.error('Error creating playlist:', error)
-      // Fall back to suggestion mode
-    }
-  }
-  
-  // Fallback response if not authenticated or error occurred
-  return `🎵 **${playlistName} Playlist Created!**
+  } catch (error) {
+    console.error('Error creating playlist:', error)
+    // Return error message instead of success message
+    return `❌ **Playlist Creation Failed**
 
-Here are ${playlistSongs.length} amazing songs I've curated for you:
+I encountered an error while trying to save your **${playlistName}** playlist to the database.
+
+Here are the songs I had prepared for you:
 
 ${playlistSongs.map((song, index) => 
   `**${index + 1}.** ${song.title} - *${song.artist}*`
 ).join('\n')}
 
-💡 **To save this playlist:**
-• **Sign in** to your account to permanently save playlists
-• Use the search bar to find any of these tracks
-• I can search for specific songs - just ask "search for [song name]"
+🔧 **Please try:**
+• Refresh the page and sign in again
+• Try creating the playlist again
+• If the problem persists, check your internet connection
 
-🎧 **Pro tip:** Say "search for ${playlistSongs[0].title}" to start listening right now!`
+🔍 **For now, you can:**
+• Search for any of these tracks manually
+• Ask me to search for specific songs: "search for [song name]"
+
+💡 **Pro tip:** Say "search for ${playlistSongs[0].title}" to start listening!`
+  }
 }
 
 // Song Database for AI Playlist Generation
