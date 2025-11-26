@@ -173,9 +173,32 @@ ${playlistSongs.map((song, index) =>
   }
 }
 
+type Song = { title: string; artist: string }
+
+// Fisher-Yates shuffle with slice to get unique, varied picks per call
+function shuffleAndTake<T>(items: T[], count: number) {
+  const array = [...items]
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[array[i], array[j]] = [array[j], array[i]]
+  }
+  return array.slice(0, Math.min(count, array.length))
+}
+
+function dedupeSongs(songs: Song[]) {
+  const seen = new Set<string>()
+  return songs.filter((song) => {
+    const key = `${song.title.toLowerCase()}-${song.artist.toLowerCase()}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 // Song Database for AI Playlist Generation
 function generatePlaylistSongs(genre: string, mood: string) {
-  const songDatabase: Record<string, Record<string, Array<{title: string, artist: string}>>> = {
+  const playlistSize = 10
+  const songDatabase: Record<string, Record<string, Song[]>> = {
     pop: {
       happy: [
         { title: "Blinding Lights", artist: "The Weeknd" },
@@ -184,28 +207,40 @@ function generatePlaylistSongs(genre: string, mood: string) {
         { title: "Good 4 U", artist: "Olivia Rodrigo" },
         { title: "Stay", artist: "The Kid LAROI & Justin Bieber" },
         { title: "Flowers", artist: "Miley Cyrus" },
-        { title: "Anti-Hero", artist: "Taylor Swift" }
+        { title: "Anti-Hero", artist: "Taylor Swift" },
+        { title: "As It Was", artist: "Harry Styles" },
+        { title: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars" },
+        { title: "Can't Stop the Feeling!", artist: "Justin Timberlake" },
+        { title: "About Damn Time", artist: "Lizzo" }
       ],
       sad: [
         { title: "Someone Like You", artist: "Adele" },
         { title: "All Too Well", artist: "Taylor Swift" },
         { title: "When the Party's Over", artist: "Billie Eilish" },
         { title: "drivers license", artist: "Olivia Rodrigo" },
-        { title: "Hurt", artist: "Johnny Cash" }
+        { title: "Hurt", artist: "Johnny Cash" },
+        { title: "Skinny Love", artist: "Birdy" },
+        { title: "The Night We Met", artist: "Lord Huron" },
+        { title: "Let Her Go", artist: "Passenger" }
       ],
       chill: [
         { title: "Heat Waves", artist: "Glass Animals" },
         { title: "Sunflower", artist: "Post Malone & Swae Lee" },
         { title: "Circles", artist: "Post Malone" },
         { title: "Peaches", artist: "Justin Bieber" },
-        { title: "Shivers", artist: "Ed Sheeran" }
+        { title: "Shivers", artist: "Ed Sheeran" },
+        { title: "Electric Feel", artist: "MGMT" },
+        { title: "Riptide", artist: "Vance Joy" },
+        { title: "Cigarette Daydreams", artist: "Cage The Elephant" }
       ],
       romantic: [
         { title: "Perfect", artist: "Ed Sheeran" },
         { title: "All of Me", artist: "John Legend" },
         { title: "Thinking Out Loud", artist: "Ed Sheeran" },
         { title: "Make You Feel My Love", artist: "Adele" },
-        { title: "A Thousand Years", artist: "Christina Perri" }
+        { title: "A Thousand Years", artist: "Christina Perri" },
+        { title: "Just The Way You Are", artist: "Bruno Mars" },
+        { title: "Adore You", artist: "Harry Styles" }
       ]
     },
     rock: {
@@ -214,14 +249,25 @@ function generatePlaylistSongs(genre: string, mood: string) {
         { title: "Mr. Brightside", artist: "The Killers" },
         { title: "Sweet Child O' Mine", artist: "Guns N' Roses" },
         { title: "Bohemian Rhapsody", artist: "Queen" },
-        { title: "Living on a Prayer", artist: "Bon Jovi" }
+        { title: "Living on a Prayer", artist: "Bon Jovi" },
+        { title: "Take Me Out", artist: "Franz Ferdinand" },
+        { title: "Buddy Holly", artist: "Weezer" }
       ],
       workout: [
         { title: "Eye of the Tiger", artist: "Survivor" },
         { title: "We Will Rock You", artist: "Queen" },
         { title: "Thunder", artist: "Imagine Dragons" },
         { title: "Believer", artist: "Imagine Dragons" },
-        { title: "Warriors", artist: "Imagine Dragons" }
+        { title: "Warriors", artist: "Imagine Dragons" },
+        { title: "Back In Black", artist: "AC/DC" },
+        { title: "Smells Like Teen Spirit", artist: "Nirvana" }
+      ],
+      chill: [
+        { title: "Everlong", artist: "Foo Fighters" },
+        { title: "Holocene", artist: "Bon Iver" },
+        { title: "Yellow", artist: "Coldplay" },
+        { title: "Slide", artist: "The Goo Goo Dolls" },
+        { title: "Drive", artist: "Incubus" }
       ]
     },
     "hip hop": {
@@ -230,14 +276,26 @@ function generatePlaylistSongs(genre: string, mood: string) {
         { title: "God's Plan", artist: "Drake" },
         { title: "Industry Baby", artist: "Lil Nas X" },
         { title: "Without Me", artist: "Eminem" },
-        { title: "SICKO MODE", artist: "Travis Scott" }
+        { title: "SICKO MODE", artist: "Travis Scott" },
+        { title: "Hotline Bling", artist: "Drake" },
+        { title: "Lose Control", artist: "Missy Elliott ft. Ciara & Fatman Scoop" },
+        { title: "Uptown Vibe", artist: "Meek Mill" }
       ],
       workout: [
         { title: "Till I Collapse", artist: "Eminem" },
         { title: "Stronger", artist: "Kanye West" },
         { title: "All the Way Up", artist: "Fat Joe & Remy Ma" },
         { title: "POWER", artist: "Kanye West" },
-        { title: "Remember the Name", artist: "Fort Minor" }
+        { title: "Remember the Name", artist: "Fort Minor" },
+        { title: "X Gon' Give It To Ya", artist: "DMX" },
+        { title: "Ante Up", artist: "M.O.P." }
+      ],
+      chill: [
+        { title: "Praise The Lord (Da Shine)", artist: "A$AP Rocky" },
+        { title: "Sunflower", artist: "Post Malone & Swae Lee" },
+        { title: "Crew", artist: "GoldLink" },
+        { title: "Good News", artist: "Mac Miller" },
+        { title: "Location", artist: "Dave" }
       ]
     },
     electronic: {
@@ -246,22 +304,71 @@ function generatePlaylistSongs(genre: string, mood: string) {
         { title: "Animals", artist: "Martin Garrix" },
         { title: "Clarity", artist: "Zedd ft. Foxes" },
         { title: "Bangarang", artist: "Skrillex" },
-        { title: "Levels", artist: "Avicii" }
+        { title: "Levels", artist: "Avicii" },
+        { title: "Greyhound", artist: "Swedish House Mafia" },
+        { title: "Heads Will Roll (A-Trak Remix)", artist: "Yeah Yeah Yeahs" },
+        { title: "Turn Down for What", artist: "DJ Snake & Lil Jon" }
       ],
       chill: [
         { title: "Midnight City", artist: "M83" },
         { title: "Something About Us", artist: "Daft Punk" },
         { title: "Breathe Me", artist: "Sia" },
         { title: "Teardrop", artist: "Massive Attack" },
-        { title: "Porcelain", artist: "Moby" }
+        { title: "Porcelain", artist: "Moby" },
+        { title: "Strobe", artist: "deadmau5" },
+        { title: "Open Eye Signal", artist: "Jon Hopkins" }
       ]
     }
   }
-  
+
+  const moodFallbacks: Record<string, Song[]> = {
+    chill: [
+      { title: "Lost in Japan", artist: "Shawn Mendes" },
+      { title: "Budapest", artist: "George Ezra" },
+      { title: "Cherry Wine", artist: "Hozier" }
+    ],
+    workout: [
+      { title: "Can't Hold Us", artist: "Macklemore & Ryan Lewis" },
+      { title: "Party Rock Anthem", artist: "LMFAO" },
+      { title: "On Top of the World", artist: "Imagine Dragons" }
+    ],
+    party: [
+      { title: "Fireball", artist: "Pitbull" },
+      { title: "Where Them Girls At", artist: "David Guetta" },
+      { title: "Starships", artist: "Nicki Minaj" }
+    ],
+    happy: [
+      { title: "Shut Up and Dance", artist: "WALK THE MOON" },
+      { title: "Best Day Of My Life", artist: "American Authors" },
+      { title: "I Gotta Feeling", artist: "Black Eyed Peas" }
+    ],
+    sad: [
+      { title: "Fix You", artist: "Coldplay" },
+      { title: "The A Team", artist: "Ed Sheeran" },
+      { title: "Jealous", artist: "Labrinth" }
+    ],
+    romantic: [
+      { title: "Can't Help Falling in Love", artist: "Elvis Presley" },
+      { title: "Lucky", artist: "Jason Mraz & Colbie Caillat" },
+      { title: "Gravity", artist: "Sara Bareilles" }
+    ]
+  }
+
   const genreSongs = songDatabase[genre] || songDatabase.pop
-  const moodSongs = genreSongs[mood] || genreSongs.happy || genreSongs[Object.keys(genreSongs)[0]]
-  
-  return moodSongs.slice(0, Math.min(7, moodSongs.length))
+  const moodSongs = genreSongs[mood] || []
+  const genreWidePool = Object.values(genreSongs).flat()
+  const fallbackMoodPool = moodFallbacks[mood] || []
+  const globalFallback = Object.values(moodFallbacks).flat()
+
+  // Build a large pool, then shuffle to return a fresh mix per request
+  const pool = dedupeSongs([
+    ...moodSongs,
+    ...genreWidePool,
+    ...fallbackMoodPool,
+    ...globalFallback
+  ])
+
+  return shuffleAndTake(pool, playlistSize)
 }
 
 export async function POST(request: NextRequest) {
