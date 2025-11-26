@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
       messageLower.includes('make')
     ) {
       console.log(`Playlist creation request. UserId: ${userId ? 'Found' : 'Not found'}`)
-      const playlistResponse = await handlePlaylistCreation(message, userId)
+      const playlistResponse = await handlePlaylistCreation(message, userId || undefined)
       return NextResponse.json({
         response: playlistResponse,
         action: 'playlist',
