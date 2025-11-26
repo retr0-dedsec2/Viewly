@@ -36,6 +36,8 @@ async function handlePlaylistCreation(message: string, userId?: string) {
   // If user is authenticated, create actual playlist in database
   if (userId) {
     try {
+      console.log(`Creating playlist for user: ${userId}, name: ${playlistName}`)
+      
       // Create playlist directly in database
       const playlist = await prisma.playlist.create({
         data: {
@@ -44,6 +46,8 @@ async function handlePlaylistCreation(message: string, userId?: string) {
           userId: userId,
         }
       })
+
+      console.log(`Playlist created with ID: ${playlist.id}`)
 
       // Add tracks to playlist
       if (playlistSongs.length > 0) {
@@ -196,13 +200,30 @@ function generatePlaylistSongs(genre: string, mood: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, userId } = await request.json()
+    const { message } = await request.json()
 
     if (!message) {
       return NextResponse.json(
         { error: 'Message is required' },
         { status: 400 }
       )
+    }
+
+    // Get user ID from Authorization header
+    let userId = null
+    try {
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.replace('Bearer ', '')
+        const { verifyToken } = await import('@/lib/auth')
+        const decoded = verifyToken(token)
+        if (decoded && decoded.userId) {
+          userId = decoded.userId
+        }
+      }
+    } catch (error) {
+      console.error('Auth token verification failed:', error)
+      // Continue without userId
     }
 
     // Get user context for personalized responses
@@ -235,11 +256,16 @@ export async function POST(request: NextRequest) {
       messageLower.includes('create') ||
       messageLower.includes('make')
     ) {
+      console.log(`Playlist creation request. UserId: ${userId ? 'Found' : 'Not found'}`)
       const playlistResponse = await handlePlaylistCreation(message, userId)
       return NextResponse.json({
         response: playlistResponse,
         action: 'playlist',
-        requiresAuth: !userId
+        requiresAuth: !userId,
+        debug: {
+          userId: userId ? 'authenticated' : 'not authenticated',
+          authHeader: request.headers.get('Authorization') ? 'present' : 'missing'
+        }
       })
     }
 
