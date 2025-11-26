@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { generateToken } from "@/lib/auth";
 import { findUserByEmail, createUser } from "@/lib/auth-db";
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
