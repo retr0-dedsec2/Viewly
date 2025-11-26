@@ -1,52 +1,60 @@
 // app/api/auth/register/route.ts
 import { NextResponse } from "next/server";
-import Parse from "@/lib/parseServer";
+import bcrypt from "bcryptjs";
+import { generateToken } from "@/lib/auth";
+import { findUserByEmail, createUser } from "@/lib/auth-db";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password, name } = body;
+    const { email, password, username } = body;
 
-    if (!email || !password) {
+    if (!email || !password || !username) {
       return NextResponse.json(
-        { error: "Email et mot de passe obligatoires" },
+        { error: "Email, password, and username are required" },
         { status: 400 }
       );
     }
 
-    // Vérifier si l'utilisateur existe déjà
-    const query = new Parse.Query(Parse.User);
-    query.equalTo("username", email);
-    const existing = await query.first({ useMasterKey: false });
-
-    if (existing) {
+    // Check if user already exists
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
       return NextResponse.json(
-        { error: "Un utilisateur avec cet email existe déjà" },
+        { error: "User with this email already exists" },
         { status: 409 }
       );
     }
 
-    // Créer un utilisateur Parse
-    const user = new Parse.User();
-    user.set("username", email);
-    user.set("email", email);
-    user.set("password", password);
-    if (name) user.set("name", name);
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await user.signUp();
+    // Create the user
+    const user = await createUser(email, username, hashedPassword);
+
+    // Generate JWT token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+    });
 
     return NextResponse.json(
       {
-        id: result.id,
-        email: result.get("email"),
-        name: result.get("name") ?? null,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          avatar: user.avatar,
+          createdAt: user.createdAt,
+        },
       },
       { status: 201 }
     );
   } catch (err: any) {
     console.error("Registration error:", err);
     return NextResponse.json(
-      { error: err.message || "Erreur serveur" },
+      { error: err.message || "Internal server error" },
       { status: 500 }
     );
   }

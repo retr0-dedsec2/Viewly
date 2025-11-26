@@ -74,9 +74,8 @@ export default function MainContent({ playlist, onPlay, currentTrack, onSearchRe
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded flex items-center justify-center transition-all">
                   <Play
                     size={14}
-                    className="sm:w-4 sm:h-4"
+                    className="sm:w-4 sm:h-4 opacity-0 group-hover:opacity-100"
                     fill="white"
-                    className="opacity-0 group-hover:opacity-100"
                   />
                 </div>
               </div>

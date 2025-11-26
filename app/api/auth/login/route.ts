@@ -1,6 +1,8 @@
 // app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
-import Parse from "@/lib/parseServer";
+import bcrypt from "bcryptjs";
+import { generateToken } from "@/lib/auth";
+import { findUserByEmail } from "@/lib/auth-db";
 
 export async function POST(req: Request) {
   try {
@@ -9,28 +11,54 @@ export async function POST(req: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email et mot de passe obligatoires" },
+        { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    const user = await Parse.User.logIn(email, password);
+    // Find user by email
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
 
-    // Tu peux générer un token JWT ici si tu veux
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
+
+    // Generate JWT token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+    });
+
     return NextResponse.json(
       {
-        id: user.id,
-        email: user.get("email"),
-        name: user.get("name") ?? null,
-        sessionToken: user.getSessionToken?.(),
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          avatar: user.avatar,
+          createdAt: user.createdAt,
+        },
       },
       { status: 200 }
     );
   } catch (err: any) {
     console.error("Login error:", err);
     return NextResponse.json(
-      { error: "Identifiants invalides" },
-      { status: 401 }
+      { error: "Internal server error" },
+      { status: 500 }
     );
   }
 }

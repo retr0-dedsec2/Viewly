@@ -2,7 +2,11 @@ FROM node:14
 
 WORKDIR /app
 
+<<<<<<< HEAD
 COPY package*.json ./
+=======
+COPY package*.json .
+>>>>>>> 8f2b42ddb27136f62b68ecb9892267b871c48d89
 
 RUN npm install
 
@@ -12,4 +16,8 @@ RUN npm run build
 
 EXPOSE 3000
 
+<<<<<<< HEAD
 CMD ["npm", "start"]
+=======
+CMD ["npm", "start"]
+>>>>>>> 8f2b42ddb27136f62b68ecb9892267b871c48d89
