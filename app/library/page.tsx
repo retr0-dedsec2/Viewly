@@ -11,6 +11,62 @@ import LikeButton from '@/components/LikeButton'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
+type PlaylistTheme = {
+  key: string
+  name: string
+  gradient: string
+  accent: string
+}
+
+// Curated set of gradients so every playlist feels distinct
+const playlistThemes: PlaylistTheme[] = [
+  {
+    key: 'neon',
+    name: 'Neon Pulse',
+    gradient: 'linear-gradient(135deg, #ff6a00 0%, #ee0979 100%)',
+    accent: '#ff6a00',
+  },
+  {
+    key: 'midnight',
+    name: 'Midnight Drive',
+    gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+    accent: '#5e5be6',
+  },
+  {
+    key: 'sunset',
+    name: 'Sunset Bloom',
+    gradient: 'linear-gradient(135deg, #f83600 0%, #f9d423 100%)',
+    accent: '#f2841f',
+  },
+  {
+    key: 'aurora',
+    name: 'Aurora Mist',
+    gradient: 'linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%)',
+    accent: '#48c6ef',
+  },
+  {
+    key: 'forest',
+    name: 'Forest Haze',
+    gradient: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1a2a6c 100%)',
+    accent: '#2a9d8f',
+  },
+  {
+    key: 'retro',
+    name: 'Retro Wave',
+    gradient: 'linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)',
+    accent: '#fd1d1d',
+  },
+]
+
+const getPlaylistTheme = (id: string, name: string) => {
+  const source = id || name
+  let hash = 0
+  for (let i = 0; i < source.length; i++) {
+    hash = (hash * 31 + source.charCodeAt(i)) >>> 0
+  }
+  return playlistThemes[hash % playlistThemes.length]
+}
+
 export default function LibraryPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [playlists, setPlaylists] = useState<Array<{ id: string; name: string; tracks: Music[] }>>([])
@@ -166,6 +222,9 @@ export default function LibraryPage() {
   }
 
   const selectedPlaylistData = playlists.find((p) => p.id === selectedPlaylist)
+  const selectedTheme = selectedPlaylistData
+    ? getPlaylistTheme(selectedPlaylistData.id, selectedPlaylistData.name)
+    : null
 
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-b from-spotify-dark via-spotify-gray to-black">
@@ -230,36 +289,72 @@ export default function LibraryPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {playlists.map((playlist) => (
-                  <div
-                    key={playlist.id}
-                    className={`bg-spotify-light p-4 rounded-lg cursor-pointer hover:bg-spotify-gray transition-colors ${
-                      selectedPlaylist === playlist.id ? 'ring-2 ring-spotify-green' : ''
-                    }`}
-                    onClick={() => setSelectedPlaylist(playlist.id)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-white font-semibold truncate">{playlist.name}</h3>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deletePlaylist(playlist.id)
-                        }}
-                        className="text-gray-400 hover:text-red-400"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                {playlists.map((playlist) => {
+                  const theme = getPlaylistTheme(playlist.id, playlist.name)
+                  return (
+                    <div
+                      key={playlist.id}
+                      className="relative overflow-hidden p-4 rounded-lg cursor-pointer transition-transform duration-150 hover:scale-[1.02] border border-white/5"
+                      style={{
+                        backgroundImage: theme.gradient,
+                        boxShadow:
+                          selectedPlaylist === playlist.id
+                            ? `0 0 0 2px ${theme.accent}`
+                            : undefined,
+                      }}
+                      onClick={() => setSelectedPlaylist(playlist.id)}
+                    >
+                      <div className="absolute inset-0 bg-black/30" />
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="relative">
+                          <span
+                            className="inline-block text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider"
+                            style={{
+                              backgroundColor: `${theme.accent}1A`,
+                              color: theme.accent,
+                            }}
+                          >
+                            {theme.name}
+                          </span>
+                          <h3 className="text-white font-semibold truncate mt-2">{playlist.name}</h3>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deletePlaylist(playlist.id)
+                          }}
+                          className="text-gray-200 hover:text-red-300 relative z-10"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      <p className="relative text-gray-100 text-sm drop-shadow-sm">{playlist.tracks.length} songs</p>
                     </div>
-                    <p className="text-gray-400 text-sm">{playlist.tracks.length} songs</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
 
           {selectedPlaylistData && (
             <div>
-              <h2 className="text-2xl font-bold text-white mb-4">{selectedPlaylistData.name}</h2>
+              <div className="flex items-center gap-3 mb-4">
+                <div
+                  className="h-10 w-10 rounded-lg shadow-lg"
+                  style={{
+                    backgroundImage: selectedTheme?.gradient,
+                  }}
+                />
+                <div>
+                  <p
+                    className="text-xs uppercase tracking-wide font-semibold"
+                    style={{ color: selectedTheme?.accent }}
+                  >
+                    {selectedTheme?.name}
+                  </p>
+                  <h2 className="text-2xl font-bold text-white">{selectedPlaylistData.name}</h2>
+                </div>
+              </div>
               {selectedPlaylistData.tracks.length === 0 ? (
                 <p className="text-gray-400">This playlist is empty</p>
               ) : (
