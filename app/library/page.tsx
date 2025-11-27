@@ -288,51 +288,98 @@ export default function LibraryPage() {
                 <p className="text-gray-400 text-base sm:text-lg mb-4">Create your first playlist</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {playlists.map((playlist) => {
-                  const theme = getPlaylistTheme(playlist.id, playlist.name)
-                  return (
-                    <div
-                      key={playlist.id}
-                      className="relative overflow-hidden p-4 rounded-lg cursor-pointer transition-transform duration-150 hover:scale-[1.02] border border-white/5"
-                      style={{
-                        backgroundImage: theme.gradient,
-                        boxShadow:
-                          selectedPlaylist === playlist.id
-                            ? `0 0 0 2px ${theme.accent}`
-                            : undefined,
-                      }}
-                      onClick={() => setSelectedPlaylist(playlist.id)}
-                    >
-                      <div className="absolute inset-0 bg-black/30" />
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="relative">
-                          <span
-                            className="inline-block text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider"
-                            style={{
-                              backgroundColor: `${theme.accent}1A`,
-                              color: theme.accent,
-                            }}
-                          >
-                            {theme.name}
-                          </span>
-                          <h3 className="text-white font-semibold truncate mt-2">{playlist.name}</h3>
-                        </div>
+              <>
+                {/* Mobile-friendly horizontal carousel */}
+                <div className="md:hidden -mx-2 px-2 pb-4 space-y-3">
+                  <h2 className="text-white font-semibold text-lg">Your playlists</h2>
+                  <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory">
+                    {playlists.map((playlist) => {
+                      const theme = getPlaylistTheme(playlist.id, playlist.name)
+                      return (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            deletePlaylist(playlist.id)
+                          key={playlist.id}
+                          className="relative min-w-[220px] text-left overflow-hidden rounded-xl p-4 snap-start border border-white/5 active:scale-[0.98] transition-transform"
+                          style={{
+                            backgroundImage: theme.gradient,
+                            boxShadow:
+                              selectedPlaylist === playlist.id ? `0 0 0 2px ${theme.accent}` : undefined,
                           }}
-                          className="text-gray-200 hover:text-red-300 relative z-10"
+                          onClick={() => setSelectedPlaylist(playlist.id)}
                         >
-                          <Trash2 size={16} />
+                          <div className="absolute inset-0 bg-black/30" />
+                          <div className="relative flex items-center justify-between mb-2">
+                            <div>
+                              <span
+                                className="inline-block text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider"
+                                style={{
+                                  backgroundColor: `${theme.accent}1A`,
+                                  color: theme.accent,
+                                }}
+                              >
+                                {theme.name}
+                              </span>
+                              <h3 className="text-white font-semibold truncate mt-2">{playlist.name}</h3>
+                            </div>
+                            <span className="text-gray-100 text-xs bg-black/30 px-2 py-1 rounded-full">
+                              {playlist.tracks.length} songs
+                            </span>
+                          </div>
+                          <div className="relative text-gray-100 text-xs">
+                            Tap to view tracks
+                          </div>
                         </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Desktop / tablet grid */}
+                <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                  {playlists.map((playlist) => {
+                    const theme = getPlaylistTheme(playlist.id, playlist.name)
+                    return (
+                      <div
+                        key={playlist.id}
+                        className="relative overflow-hidden p-4 rounded-lg cursor-pointer transition-transform duration-150 hover:scale-[1.02] border border-white/5"
+                        style={{
+                          backgroundImage: theme.gradient,
+                          boxShadow:
+                            selectedPlaylist === playlist.id
+                              ? `0 0 0 2px ${theme.accent}`
+                              : undefined,
+                        }}
+                        onClick={() => setSelectedPlaylist(playlist.id)}
+                      >
+                        <div className="absolute inset-0 bg-black/30" />
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="relative">
+                            <span
+                              className="inline-block text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider"
+                              style={{
+                                backgroundColor: `${theme.accent}1A`,
+                                color: theme.accent,
+                              }}
+                            >
+                              {theme.name}
+                            </span>
+                            <h3 className="text-white font-semibold truncate mt-2">{playlist.name}</h3>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deletePlaylist(playlist.id)
+                            }}
+                            className="text-gray-200 hover:text-red-300 relative z-10"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        <p className="relative text-gray-100 text-sm drop-shadow-sm">{playlist.tracks.length} songs</p>
                       </div>
-                      <p className="relative text-gray-100 text-sm drop-shadow-sm">{playlist.tracks.length} songs</p>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              </>
             )}
           </div>
 
