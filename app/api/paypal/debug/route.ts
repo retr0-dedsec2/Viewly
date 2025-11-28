@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     clientIdKeys: status.clientId,
     clientSecretKeys: status.clientSecret,
+    merchantEmailKeys: status.merchantEmail,
     mode: process.env.PAYPAL_MODE || process.env.PAYPAL_ENV || 'sandbox',
   })
 }

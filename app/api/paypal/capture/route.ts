@@ -65,7 +65,10 @@ export async function POST(req: NextRequest) {
     })
   } catch (error: any) {
     const message = error?.message || 'Unknown PayPal error'
-    console.error('PayPal capture error:', message)
+    const issue = error?.result?.details?.[0]?.issue
+    const description = error?.result?.details?.[0]?.description
+    const statusCode = error?.statusCode
+    console.error('PayPal capture error:', message, issue, description)
 
     if (message === 'PAYPAL_CREDENTIALS_MISSING') {
       const status = error?.status || getCredentialStatus()
@@ -78,6 +81,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    return NextResponse.json({ error: 'Failed to capture PayPal payment', details: message }, { status: 500 })
+    if (issue === 'PAYEE_ACCOUNT_RESTRICTED') {
+      return NextResponse.json(
+        {
+          error: 'The PayPal merchant account is restricted and cannot receive payments. Please contact support.',
+          details: description || issue,
+        },
+        { status: 503 },
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to capture PayPal payment', details: description || message, statusCode },
+      { status: 500 },
+    )
   }
 }

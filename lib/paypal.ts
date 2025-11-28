@@ -17,10 +17,20 @@ const clientSecretKeys = [
   'NEXT_PUBLIC_PAYPAL_SECRET_KEY',
 ]
 
+const merchantEmailKeys = [
+  'PAYPAL_MERCHANT_EMAIL',
+  'PAYPAL_RECEIVER_EMAIL',
+  'PAYPAL_BUSINESS_EMAIL',
+  'NEXT_PUBLIC_PAYPAL_MERCHANT_EMAIL',
+  'NEXT_PUBLIC_PAYPAL_RECEIVER_EMAIL',
+  'NEXT_PUBLIC_PAYPAL_BUSINESS_EMAIL',
+]
+
 export function getCredentialStatus() {
   return {
     clientId: clientIdKeys.map((key) => ({ key, present: Boolean(process.env[key]) })),
     clientSecret: clientSecretKeys.map((key) => ({ key, present: Boolean(process.env[key]) })),
+    merchantEmail: merchantEmailKeys.map((key) => ({ key, present: Boolean(process.env[key]) })),
   }
 }
 
@@ -38,6 +48,12 @@ function getCredentials() {
     clientIdKey,
     clientSecretKey,
   }
+}
+
+export function getMerchantEmail() {
+  const key = merchantEmailKeys.find((k) => process.env[k])
+  if (!key) return null
+  return process.env[key] as string
 }
 
 function getEnvironment() {
