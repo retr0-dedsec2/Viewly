@@ -59,6 +59,7 @@ export default function SubscriptionsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null)
   const [message, setMessage] = useState('')
+  const [processingReturn, setProcessingReturn] = useState(false)
   const { user, login, isAuthenticated } = useAuth()
   const router = useRouter()
 
@@ -70,9 +71,9 @@ export default function SubscriptionsPage() {
 
   const currentPlan = (user?.subscriptionPlan ?? 'FREE') as PlanId
 
-  const handleChangePlan = async (plan: PlanId) => {
+  const handleFreePlan = async () => {
     if (loadingPlan || !user) return
-    setLoadingPlan(plan)
+    setLoadingPlan('FREE')
     setMessage('')
 
     try {
@@ -88,7 +89,7 @@ export default function SubscriptionsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan: 'FREE' }),
       })
 
       const data = await res.json()
@@ -105,6 +106,107 @@ export default function SubscriptionsPage() {
       setLoadingPlan(null)
     }
   }
+
+  const handlePremiumPlan = async () => {
+    if (loadingPlan || !user) return
+    setLoadingPlan('PREMIUM')
+    setMessage('')
+
+    try {
+      const token = getToken()
+      if (!token) {
+        router.push('/login')
+        return
+      }
+
+      const res = await fetch('/api/paypal/create-order', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Unable to start PayPal checkout')
+      }
+
+      if (data.approvalUrl) {
+        window.location.href = data.approvalUrl
+      } else {
+        throw new Error('No approval URL returned from PayPal')
+      }
+    } catch (error: any) {
+      setMessage(error.message || 'An error occurred')
+      setLoadingPlan(null)
+    }
+  }
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    if (processingReturn) return
+
+    const searchParams = new URLSearchParams(window.location.search)
+    const status = searchParams.get('paypalStatus')
+    const paypalToken = searchParams.get('token') || searchParams.get('orderId')
+
+    const clearParams = () => {
+      searchParams.delete('paypalStatus')
+      searchParams.delete('token')
+      searchParams.delete('orderId')
+      const newQuery = searchParams.toString()
+      const newUrl = newQuery ? `/subscriptions?${newQuery}` : '/subscriptions'
+      window.history.replaceState({}, '', newUrl)
+    }
+
+    const capturePayment = async () => {
+      if (!paypalToken) return
+      setProcessingReturn(true)
+      setLoadingPlan('PREMIUM')
+      setMessage('Confirming PayPal payment...')
+
+      try {
+        const token = getToken()
+        if (!token) {
+          router.push('/login')
+          return
+        }
+
+        const res = await fetch(`/api/paypal/capture?token=${paypalToken}`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Unable to confirm payment')
+        }
+
+        login(data.token, data.user)
+        setMessage(data.message || 'Payment confirmed. Premium activated.')
+      } catch (error: any) {
+        setMessage(error.message || 'An error occurred while confirming payment')
+      } finally {
+        setLoadingPlan(null)
+        setProcessingReturn(false)
+        clearParams()
+      }
+    }
+
+    if (status === 'cancel') {
+      setMessage('Payment cancelled.')
+      clearParams()
+      return
+    }
+
+    if (status === 'success' && paypalToken) {
+      capturePayment()
+    }
+  }, [isAuthenticated, login, processingReturn, router])
 
   const subscriptionCopy = useMemo(() => {
     if (currentPlan === 'PREMIUM') {
@@ -179,7 +281,7 @@ export default function SubscriptionsPage() {
                     </div>
                     <button
                       disabled={isCurrent || loadingPlan === plan.id}
-                      onClick={() => handleChangePlan(plan.id)}
+                      onClick={() => (plan.id === 'PREMIUM' ? handlePremiumPlan() : handleFreePlan())}
                       className={`px-4 py-2 rounded-full font-semibold text-sm transition-all ${
                         isCurrent
                           ? 'bg-spotify-gray text-gray-300 cursor-not-allowed'
