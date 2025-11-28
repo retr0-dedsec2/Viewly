@@ -313,6 +313,18 @@ export default function LibraryPage() {
                           onClick={() => setSelectedPlaylist(playlist.id)}
                         >
                           <div className="absolute inset-0 bg-black/30" />
+                          <div className="absolute top-2 right-2 z-10">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deletePlaylist(playlist.id)
+                              }}
+                              className="text-gray-200 hover:text-red-300"
+                              aria-label="Delete playlist"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                           <div className="relative flex items-center justify-between mb-2">
                             <div>
                               <span

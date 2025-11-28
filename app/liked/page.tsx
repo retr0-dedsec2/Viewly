@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Heart, Play } from 'lucide-react'
+import { Heart, Play, Trash2 } from 'lucide-react'
 import { Music } from '@/types/music'
 import Sidebar from '@/components/Sidebar'
 import MusicPlayer from '@/components/MusicPlayer'
@@ -10,7 +10,7 @@ import MobileHeader from '@/components/MobileHeader'
 import LikeButton from '@/components/LikeButton'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getLikedSongs } from '@/lib/liked-songs'
+import { getLikedSongs, removeLikedSong } from '@/lib/liked-songs'
 
 export default function LikedPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -86,6 +86,18 @@ export default function LikedPage() {
       } else {
         audioRef.current.play()
       }
+    }
+  }
+
+  const handleRemoveLiked = (trackId: string) => {
+    if (!user) return
+    removeLikedSong(trackId, user.id)
+    const updated = likedSongs.filter((s) => s.id !== trackId)
+    setLikedSongs(updated)
+    if (currentTrack?.id === trackId) {
+      setCurrentTrack(null)
+      setIsPlaying(false)
+      setCurrentIndex(-1)
     }
   }
 
@@ -191,8 +203,15 @@ export default function LikedPage() {
                       <div className="hidden md:block text-gray-400 text-sm">
                         {new Date().toLocaleDateString()}
                       </div>
-                      <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                      <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 flex-shrink-0">
                         <LikeButton track={track} size={16} />
+                        <button
+                          onClick={() => handleRemoveLiked(track.id)}
+                          className="text-gray-400 hover:text-red-300"
+                          aria-label="Remove from liked"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
                   ))}
