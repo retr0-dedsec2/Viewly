@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { Crown, Megaphone } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
 
 type AdBannerProps = {
   onUpgradeClick?: () => void
@@ -27,7 +28,11 @@ const ads = [
 ]
 
 export default function AdBanner({ onUpgradeClick }: AdBannerProps) {
+  const { user } = useAuth()
+  const isPremium = user?.subscriptionPlan === 'PREMIUM'
   const ad = useMemo(() => ads[Math.floor(Math.random() * ads.length)], [])
+
+  if (isPremium) return null
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-white/5 bg-gradient-to-r from-spotify-light/80 via-spotify-gray/80 to-black/60 p-5 sm:p-6 mb-6">

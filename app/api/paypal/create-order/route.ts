@@ -48,10 +48,16 @@ export async function POST(req: NextRequest) {
       orderId: order.result.id,
     })
   } catch (error: any) {
-    console.error('PayPal create order error:', error?.message || error)
-    return NextResponse.json(
-      { error: 'Failed to create PayPal order', details: error?.message },
-      { status: 500 },
-    )
+    const message = error?.message || 'Unknown PayPal error'
+    console.error('PayPal create order error:', message)
+
+    if (message.includes('credentials are not configured')) {
+      return NextResponse.json(
+        { error: 'PayPal is not configured on the server. Please try again later.' },
+        { status: 503 },
+      )
+    }
+
+    return NextResponse.json({ error: 'Failed to create PayPal order', details: message }, { status: 500 })
   }
 }
