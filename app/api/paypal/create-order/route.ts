@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import paypal from '@paypal/checkout-server-sdk'
 import { verifyToken } from '@/lib/auth'
-import { getPayPalClient } from '@/lib/paypal'
+import { getPayPalClient, getCredentialStatus } from '@/lib/paypal'
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,9 +51,13 @@ export async function POST(req: NextRequest) {
     const message = error?.message || 'Unknown PayPal error'
     console.error('PayPal create order error:', message)
 
-    if (message.includes('credentials are not configured')) {
+    if (message === 'PAYPAL_CREDENTIALS_MISSING') {
+      const status = error?.status || getCredentialStatus()
       return NextResponse.json(
-        { error: 'PayPal is not configured on the server. Please try again later.' },
+        {
+          error: 'PayPal is not configured on the server. Please try again later.',
+          missingCredentials: status,
+        },
         { status: 503 },
       )
     }

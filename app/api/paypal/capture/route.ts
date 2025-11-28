@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import paypal from '@paypal/checkout-server-sdk'
 import { verifyToken, generateToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getPayPalClient } from '@/lib/paypal'
+import { getPayPalClient, getCredentialStatus } from '@/lib/paypal'
 
 export async function POST(req: NextRequest) {
   try {
@@ -64,10 +64,20 @@ export async function POST(req: NextRequest) {
       message: 'Payment confirmed. Premium activated for 30 days.',
     })
   } catch (error: any) {
-    console.error('PayPal capture error:', error?.message || error)
-    return NextResponse.json(
-      { error: 'Failed to capture PayPal payment', details: error?.message },
-      { status: 500 },
-    )
+    const message = error?.message || 'Unknown PayPal error'
+    console.error('PayPal capture error:', message)
+
+    if (message === 'PAYPAL_CREDENTIALS_MISSING') {
+      const status = error?.status || getCredentialStatus()
+      return NextResponse.json(
+        {
+          error: 'PayPal is not configured on the server. Please try again later.',
+          missingCredentials: status,
+        },
+        { status: 503 },
+      )
+    }
+
+    return NextResponse.json({ error: 'Failed to capture PayPal payment', details: message }, { status: 500 })
   }
 }
