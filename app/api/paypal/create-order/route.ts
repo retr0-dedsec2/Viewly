@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     })
 
     const order = await client.execute(request)
-    const approvalLink = order.result.links?.find((link) => link.rel === 'approve')
+    const approvalLink = order.result.links?.find((link: any) => link.rel === 'approve')
 
     if (!approvalLink?.href) {
       return NextResponse.json({ error: 'Unable to create PayPal order' }, { status: 400 })
