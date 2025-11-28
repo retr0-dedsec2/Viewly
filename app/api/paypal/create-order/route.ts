@@ -47,8 +47,11 @@ export async function POST(req: NextRequest) {
       approvalUrl: approvalLink.href,
       orderId: order.result.id,
     })
-  } catch (error) {
-    console.error('PayPal create order error:', error)
-    return NextResponse.json({ error: 'Failed to create PayPal order' }, { status: 500 })
+  } catch (error: any) {
+    console.error('PayPal create order error:', error?.message || error)
+    return NextResponse.json(
+      { error: 'Failed to create PayPal order', details: error?.message },
+      { status: 500 },
+    )
   }
 }

@@ -63,8 +63,11 @@ export async function POST(req: NextRequest) {
       },
       message: 'Payment confirmed. Premium activated for 30 days.',
     })
-  } catch (error) {
-    console.error('PayPal capture error:', error)
-    return NextResponse.json({ error: 'Failed to capture PayPal payment' }, { status: 500 })
+  } catch (error: any) {
+    console.error('PayPal capture error:', error?.message || error)
+    return NextResponse.json(
+      { error: 'Failed to capture PayPal payment', details: error?.message },
+      { status: 500 },
+    )
   }
 }
