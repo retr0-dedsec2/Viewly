@@ -38,6 +38,10 @@ export async function GET(request: NextRequest) {
         email: user.email,
         username: user.username,
         avatar: user.avatar,
+        role: user.role,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionExpiresAt: user.subscriptionExpiresAt,
+        hasAds: user.hasAds,
         createdAt: user.createdAt,
       },
     })

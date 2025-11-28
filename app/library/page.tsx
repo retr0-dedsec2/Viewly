@@ -8,6 +8,7 @@ import MusicPlayer from '@/components/MusicPlayer'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import LikeButton from '@/components/LikeButton'
+import AdBanner from '@/components/AdBanner'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -78,6 +79,7 @@ export default function LibraryPage() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
+  const showAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : false
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -247,6 +249,10 @@ export default function LibraryPage() {
                 <span className="sm:hidden">Create</span>
               </button>
             </div>
+
+            {showAds && (
+              <AdBanner onUpgradeClick={() => router.push('/subscriptions')} />
+            )}
 
             {showCreateForm && (
               <div className="bg-spotify-light p-4 rounded-lg mb-4">

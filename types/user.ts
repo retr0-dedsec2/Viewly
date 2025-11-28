@@ -3,6 +3,10 @@ export interface User {
   email: string
   username: string
   avatar?: string
+  role: 'USER' | 'ADMIN'
+  subscriptionPlan: 'FREE' | 'PREMIUM'
+  subscriptionExpiresAt?: string | null
+  hasAds?: boolean
   createdAt: string
 }
 

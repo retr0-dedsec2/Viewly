@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, LogOut, Settings, Music } from 'lucide-react'
+import { User, LogOut, Settings, Music, Crown } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user, logout } = useAuth()
   const router = useRouter()
+  const isPremium = user?.subscriptionPlan === 'PREMIUM'
 
   useEffect(() => {
     if (!user) {
@@ -57,6 +58,29 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-spotify-gray rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Crown size={20} className={isPremium ? 'text-yellow-300' : 'text-gray-400'} />
+                  <div>
+                    <p className="text-white font-medium">Subscription</p>
+                    <p className="text-gray-400 text-sm">
+                      {isPremium ? 'Premium — ads disabled' : 'Free plan — ads enabled'}
+                    </p>
+                    {user.subscriptionExpiresAt && (
+                      <p className="text-gray-500 text-xs">
+                        Valid until {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push('/subscriptions')}
+                  className="text-spotify-green hover:text-green-400"
+                >
+                  Manage
+                </button>
+              </div>
+
               <div className="flex items-center justify-between p-4 bg-spotify-gray rounded-lg">
                 <div className="flex items-center gap-3">
                   <Settings size={20} className="text-gray-400" />
@@ -112,6 +136,30 @@ export default function ProfilePage() {
                   disabled
                   className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg"
                 />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Role
+                  </label>
+                  <input
+                    type="text"
+                    value={user.role}
+                    disabled
+                    className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg uppercase tracking-wide"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Plan
+                  </label>
+                  <input
+                    type="text"
+                    value={user.subscriptionPlan}
+                    disabled
+                    className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg uppercase tracking-wide"
+                  />
+                </div>
               </div>
             </div>
           </div>

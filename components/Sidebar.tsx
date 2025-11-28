@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Library, Heart, Plus, User, LogOut } from 'lucide-react'
+import { Home, Search, Library, Heart, Plus, User, LogOut, Crown, Shield } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 
@@ -67,6 +67,36 @@ export default function Sidebar() {
               >
                 <Library size={24} />
                 <span className="font-medium">Your Library</span>
+              </Link>
+            </li>
+          )}
+          {isAuthenticated && (
+            <li>
+              <Link
+                href="/subscriptions"
+                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  isActive('/subscriptions')
+                    ? 'text-white bg-spotify-light'
+                    : 'text-gray-300 hover:text-white hover:bg-spotify-light'
+                }`}
+              >
+                <Crown size={22} />
+                <span className="font-medium">Abonnements</span>
+              </Link>
+            </li>
+          )}
+          {isAuthenticated && user?.role === 'ADMIN' && (
+            <li>
+              <Link
+                href="/admin"
+                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  isActive('/admin')
+                    ? 'text-white bg-spotify-light'
+                    : 'text-gray-300 hover:text-white hover:bg-spotify-light'
+                }`}
+              >
+                <Shield size={22} />
+                <span className="font-medium">Admin</span>
               </Link>
             </li>
           )}

@@ -41,6 +41,8 @@ export async function POST(req: Request) {
       userId: user.id,
       email: user.email,
       username: user.username,
+      role: user.role,
+      subscriptionPlan: user.subscriptionPlan,
     });
 
     return NextResponse.json(
@@ -51,6 +53,10 @@ export async function POST(req: Request) {
           email: user.email,
           username: user.username,
           avatar: user.avatar,
+          role: user.role,
+          subscriptionPlan: user.subscriptionPlan,
+          subscriptionExpiresAt: user.subscriptionExpiresAt,
+          hasAds: user.hasAds,
           createdAt: user.createdAt,
         },
       },

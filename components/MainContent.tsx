@@ -4,15 +4,25 @@ import { Music } from '@/types/music'
 import { Play } from 'lucide-react'
 import SearchBar from './SearchBar'
 import LikeButton from './LikeButton'
+import AdBanner from './AdBanner'
 
 interface MainContentProps {
   playlist: Music[]
   onPlay: (track: Music) => void
   currentTrack: Music | null
   onSearchResults?: (results: Music[]) => void
+  showAds?: boolean
+  onUpgradeClick?: () => void
 }
 
-export default function MainContent({ playlist, onPlay, currentTrack, onSearchResults }: MainContentProps) {
+export default function MainContent({
+  playlist,
+  onPlay,
+  currentTrack,
+  onSearchResults,
+  showAds,
+  onUpgradeClick,
+}: MainContentProps) {
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div className="mb-6 lg:mb-8">
@@ -23,6 +33,8 @@ export default function MainContent({ playlist, onPlay, currentTrack, onSearchRe
       <div className="mb-6 lg:mb-8">
         <SearchBar onSearchResults={onSearchResults || (() => {})} />
       </div>
+
+      {showAds && <AdBanner onUpgradeClick={onUpgradeClick} />}
 
       {/* Quick Access */}
       <div className="mb-8 lg:mb-12">

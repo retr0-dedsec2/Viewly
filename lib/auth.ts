@@ -6,10 +6,20 @@ export interface TokenPayload {
   userId: string
   email: string
   username: string
+  role: 'USER' | 'ADMIN'
+  subscriptionPlan: 'FREE' | 'PREMIUM'
 }
 
 export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
+  const normalizedPayload: TokenPayload = {
+    userId: payload.userId,
+    email: payload.email,
+    username: payload.username,
+    role: payload.role || 'USER',
+    subscriptionPlan: payload.subscriptionPlan || 'FREE',
+  }
+
+  return jwt.sign(normalizedPayload, JWT_SECRET, { expiresIn: '7d' })
 }
 
 export function verifyToken(token: string): TokenPayload | null {
@@ -27,6 +37,8 @@ export const users: Array<{
   username: string
   password: string
   avatar?: string
+  role?: 'USER' | 'ADMIN'
+  subscriptionPlan?: 'FREE' | 'PREMIUM'
   createdAt: string
 }> = []
 
@@ -44,6 +56,8 @@ export function createUser(email: string, username: string, hashedPassword: stri
     email,
     username,
     password: hashedPassword,
+    role: 'USER' as const,
+    subscriptionPlan: 'FREE' as const,
     createdAt: new Date().toISOString(),
   }
   users.push(user)

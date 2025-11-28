@@ -9,6 +9,8 @@ import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import { Music } from '@/types/music'
 import { convertYouTubeToMusic } from '@/lib/youtube'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -18,6 +20,8 @@ export default function Home() {
   const [showAIChat, setShowAIChat] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(-1)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const { user } = useAuth()
+  const router = useRouter()
 
   // Load popular YouTube music on mount
   useEffect(() => {
@@ -105,6 +109,8 @@ export default function Home() {
     }
   }
 
+  const showAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : true
+
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-b from-spotify-dark via-spotify-gray to-black">
       {/* Mobile Header */}
@@ -125,6 +131,8 @@ export default function Home() {
           onPlay={handlePlay}
           currentTrack={currentTrack}
           onSearchResults={handleSearchResults}
+          showAds={showAds}
+          onUpgradeClick={() => router.push('/subscriptions')}
         />
       </div>
       

@@ -9,6 +9,7 @@ import MusicPlayer from '@/components/MusicPlayer'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import LikeButton from '@/components/LikeButton'
+import AdBanner from '@/components/AdBanner'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -23,7 +24,7 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState<'relevance' | 'date' | 'rating' | 'viewCount'>('relevance')
   const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -65,6 +66,8 @@ export default function SearchPage() {
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying)
   }
+
+  const showAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : true
 
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-b from-spotify-dark via-spotify-gray to-black">
@@ -144,6 +147,8 @@ export default function SearchPage() {
                 </select>
               </div>
             </div>
+
+            {showAds && <AdBanner onUpgradeClick={() => router.push('/subscriptions')} />}
           </div>
 
           {results.length > 0 ? (
