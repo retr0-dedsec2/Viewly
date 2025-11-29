@@ -44,12 +44,6 @@ export default function MainContent({
 
       {showAds && <AdBanner onUpgradeClick={onUpgradeClick} />}
 
-      {tasteProfile && (
-        <div className="mb-6 lg:mb-8">
-          <TasteInsights profile={tasteProfile} onPromptSelect={onTastePrompt} />
-        </div>
-      )}
-
       {/* Quick Access */}
       <div className="mb-8 lg:mb-12">
         <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-4">Made for You</h3>
