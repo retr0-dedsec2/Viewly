@@ -29,12 +29,14 @@ export async function GET(request: NextRequest) {
       const decoded = token ? verifyToken(token) : null
       if (decoded?.userId) {
         const tasteQuery = normalizeTasteQuery(query)
-        await prisma.searchHistory.create({
-          data: {
-            userId: decoded.userId,
-            query: tasteQuery || query,
-          },
-        })
+        if (tasteQuery) {
+          await prisma.searchHistory.create({
+            data: {
+              userId: decoded.userId,
+              query: tasteQuery,
+            },
+          })
+        }
       }
     } catch (error) {
       console.error('Failed to log search history:', error)

@@ -98,6 +98,15 @@ export function buildTasteProfile(
   likedSongs: Music[],
   searchHistory: SearchEntry[]
 ): TasteProfile {
+  // Deduplicate search queries while preserving order
+  const seenQueries = new Set<string>()
+  const uniqueSearches = searchHistory.filter((entry) => {
+    const q = (entry.query || '').toLowerCase()
+    if (!q || seenQueries.has(q)) return false
+    seenQueries.add(q)
+    return true
+  })
+
   const artistCounts = new Map<string, number>()
   const genreCounts = new Map<string, number>()
   const moodCounts = new Map<string, number>()
@@ -113,7 +122,7 @@ export function buildTasteProfile(
     accumulateKeywords(text, keywordCounts)
   })
 
-  searchHistory.forEach((entry) => {
+  uniqueSearches.forEach((entry) => {
     const query = entry.query || ''
     collectFromKeywords(query, genreKeywords, genreCounts)
     collectFromKeywords(query, moodKeywords, moodCounts)
@@ -125,7 +134,7 @@ export function buildTasteProfile(
   const favoriteMoods = rankFromMap(moodCounts, 3)
   const keywords = rankFromMap(keywordCounts, 6)
 
-  const primary = topGenres[0] || topArtists[0] || 'music'
+  const primary = topGenres[0] || topArtists[0] || keywords[0] || 'music'
   const tone = favoriteMoods[0] ? `${favoriteMoods[0]} vibes` : 'go-to picks'
   const summary = `You lean toward ${primary} with ${tone}.`
 
@@ -134,9 +143,9 @@ export function buildTasteProfile(
     topGenres,
     favoriteMoods,
     keywords,
-    recentSearches: searchHistory.slice(0, 3).map((s) => s.query),
+    recentSearches: uniqueSearches.slice(0, 3).map((s) => s.query),
     totalLiked: likedSongs.length,
-    totalSearches: searchHistory.length,
+    totalSearches: uniqueSearches.length,
     summary,
   }
 }
