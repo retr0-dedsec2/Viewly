@@ -25,7 +25,11 @@ export function getSearchHistory(userId?: string): SearchEntry[] {
     const parsed = JSON.parse(raw) as SearchEntry[]
     return Array.isArray(parsed)
       ? parsed
-          .filter((entry) => entry?.query)
+          .map((entry) => ({
+            ...entry,
+            query: normalizeTasteQuery(entry?.query || '') || '',
+          }))
+          .filter((entry) => entry.query)
           .sort((a, b) => b.timestamp - a.timestamp)
       : []
   } catch {

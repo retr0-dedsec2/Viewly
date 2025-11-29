@@ -1,5 +1,6 @@
 import { Music } from '@/types/music'
 import type { SearchEntry } from './search-history'
+import { normalizeTasteQuery } from './taste-queries'
 
 export type TasteProfile = {
   topArtists: string[]
@@ -98,14 +99,17 @@ export function buildTasteProfile(
   likedSongs: Music[],
   searchHistory: SearchEntry[]
 ): TasteProfile {
-  // Deduplicate search queries while preserving order
+  // Normalize and deduplicate search queries while preserving order
   const seenQueries = new Set<string>()
-  const uniqueSearches = searchHistory.filter((entry) => {
-    const q = (entry.query || '').toLowerCase()
-    if (!q || seenQueries.has(q)) return false
-    seenQueries.add(q)
-    return true
-  })
+  const uniqueSearches: SearchEntry[] = []
+  for (const entry of searchHistory) {
+    const normalized = normalizeTasteQuery(entry.query || '')
+    if (!normalized) continue
+    const key = normalized.toLowerCase()
+    if (seenQueries.has(key)) continue
+    seenQueries.add(key)
+    uniqueSearches.push({ ...entry, query: normalized })
+  }
 
   const artistCounts = new Map<string, number>()
   const genreCounts = new Map<string, number>()
@@ -135,8 +139,16 @@ export function buildTasteProfile(
   const keywords = rankFromMap(keywordCounts, 6)
 
   const primary = topGenres[0] || topArtists[0] || keywords[0] || 'music'
-  const tone = favoriteMoods[0] ? `${favoriteMoods[0]} vibes` : 'go-to picks'
-  const summary = `You lean toward ${primary} with ${tone}.`
+  const tone =
+    favoriteMoods[0] || topArtists[0] || topGenres[0]
+      ? favoriteMoods[0]
+        ? `${favoriteMoods[0]} vibes`
+        : 'favorite picks'
+      : 'exploration'
+  const summary =
+    topArtists.length || topGenres.length || keywords.length
+      ? `You lean toward ${primary} with ${tone}.`
+      : 'Start liking songs or searching artists to map your taste.'
 
   return {
     topArtists,
