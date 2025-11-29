@@ -1,5 +1,7 @@
 'use client'
 
+import { normalizeTasteQuery } from './taste-queries'
+
 const HISTORY_KEY = 'search_history'
 const MAX_ENTRIES = 40
 
@@ -49,15 +51,16 @@ export function recordSearchQuery(query: string, userId?: string) {
   if (!cleaned) return
 
   // Skip logging generic prompts so they don't pollute the taste profile
-  if (GENERIC_QUERIES.has(cleaned.toLowerCase())) return
+  const normalized = normalizeTasteQuery(cleaned)
+  if (!normalized || GENERIC_QUERIES.has(cleaned.toLowerCase())) return
 
   const history = getSearchHistory(userId)
   const deduped = history.filter(
-    (entry) => entry.query.toLowerCase() !== cleaned.toLowerCase()
+    (entry) => entry.query.toLowerCase() !== normalized.toLowerCase()
   )
 
   const next: SearchEntry[] = [
-    { query: cleaned, timestamp: Date.now() },
+    { query: normalized, timestamp: Date.now() },
     ...deduped,
   ].slice(0, MAX_ENTRIES)
 

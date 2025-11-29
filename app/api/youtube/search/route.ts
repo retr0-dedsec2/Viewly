@@ -3,6 +3,7 @@ import { sanitizeSearchQuery } from '@/lib/sanitize'
 import { getAuthToken } from '@/lib/auth-tokens'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { normalizeTasteQuery } from '@/lib/taste-queries'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,10 +28,11 @@ export async function GET(request: NextRequest) {
       const token = getAuthToken(request)
       const decoded = token ? verifyToken(token) : null
       if (decoded?.userId) {
+        const tasteQuery = normalizeTasteQuery(query)
         await prisma.searchHistory.create({
           data: {
             userId: decoded.userId,
-            query,
+            query: tasteQuery || query,
           },
         })
       }
