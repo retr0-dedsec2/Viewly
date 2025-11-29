@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/auth-tokens'
+import { normalizeTasteQuery } from '@/lib/taste-queries'
 
 export const dynamic = 'force-dynamic'
 
@@ -449,10 +450,14 @@ export async function POST(request: NextRequest) {
       messageLower.includes('play') ||
       messageLower.includes('listen')
     ) {
-      // Extract search query
-      const searchQuery = message
-        .replace(/search|find|play|listen|for|music|song|to/gi, '')
-        .trim()
+      // Extract search query, stripping helper words but keeping the artist/genre
+      const cleanedQuery =
+        normalizeTasteQuery(message) ||
+        message
+          .replace(/search|find|play|listen|for|music|song|to/gi, '')
+          .trim()
+
+      const searchQuery = cleanedQuery || message.trim()
 
       return NextResponse.json({
         response: `🔍 I'll help you search for "${searchQuery}". Let me find the best tracks on YouTube for you!`,
