@@ -5,15 +5,19 @@ import { Search, X } from 'lucide-react'
 import { Music } from '@/types/music'
 import { convertYouTubeToMusic } from '@/lib/youtube'
 import { sanitizeSearchQuery } from '@/lib/sanitize'
+import { recordSearchQuery } from '@/lib/search-history'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface SearchBarProps {
   onSearchResults: (results: Music[]) => void
   onClose?: () => void
+  onSearchLogged?: (query: string) => void
 }
 
-export default function SearchBar({ onSearchResults, onClose }: SearchBarProps) {
+export default function SearchBar({ onSearchResults, onClose, onSearchLogged }: SearchBarProps) {
   const [query, setQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const { user } = useAuth()
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,6 +37,8 @@ export default function SearchBar({ onSearchResults, onClose }: SearchBarProps) 
       if (data.items) {
         const musicResults = data.items.map((item: any) => convertYouTubeToMusic(item))
         onSearchResults(musicResults)
+        recordSearchQuery(sanitized, user?.id)
+        onSearchLogged?.(sanitized)
       }
     } catch (error) {
       console.error('Search error:', error)

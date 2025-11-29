@@ -12,6 +12,9 @@ import { convertYouTubeToMusic } from '@/lib/youtube'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { sanitizeSearchQuery } from '@/lib/sanitize'
+import { getLikedSongs } from '@/lib/liked-songs'
+import { getSearchHistory, recordSearchQuery } from '@/lib/search-history'
+import { buildTasteProfile, TasteProfile } from '@/lib/taste-profile'
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -20,6 +23,7 @@ export default function Home() {
   const [playlist, setPlaylist] = useState<Music[]>([])
   const [showAIChat, setShowAIChat] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(-1)
+  const [tasteProfile, setTasteProfile] = useState<TasteProfile | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const { user } = useAuth()
   const router = useRouter()
@@ -56,6 +60,33 @@ export default function Home() {
     loadPopularMusic()
   }, [])
 
+  const refreshTasteProfile = () => {
+    if (!user) {
+      setTasteProfile(null)
+      return
+    }
+    const liked = getLikedSongs(user.id)
+    const searches = getSearchHistory(user.id)
+    setTasteProfile(buildTasteProfile(liked, searches))
+  }
+
+  useEffect(() => {
+    refreshTasteProfile()
+  }, [user])
+
+  useEffect(() => {
+    if (!user) return
+
+    const handleStorageChange = () => refreshTasteProfile()
+    const interval = setInterval(handleStorageChange, 1500)
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      clearInterval(interval)
+    }
+  }, [user])
+
   const handlePlay = (track: Music) => {
     const index = playlist.findIndex((t) => t.id === track.id)
     setCurrentIndex(index)
@@ -65,12 +96,14 @@ export default function Home() {
 
   const handleSearchResults = (results: Music[]) => {
     setPlaylist(results)
+    refreshTasteProfile()
   }
 
   const handleAISearch = async (query: string) => {
     try {
       const { sanitized, isRejected } = sanitizeSearchQuery(query)
       if (isRejected) return
+      recordSearchQuery(sanitized, user?.id)
 
       const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(sanitized)}`)
       const data = await response.json()
@@ -78,6 +111,7 @@ export default function Home() {
       if (data.items) {
         const musicTracks = data.items.map((item: any) => convertYouTubeToMusic(item))
         setPlaylist(musicTracks)
+        refreshTasteProfile()
       }
     } catch (error) {
       console.error('Error searching via AI:', error)
@@ -137,6 +171,9 @@ export default function Home() {
           onSearchResults={handleSearchResults}
           showAds={showAds}
           onUpgradeClick={() => router.push('/subscriptions')}
+          tasteProfile={tasteProfile}
+          onTastePrompt={handleAISearch}
+          onSearchLogged={refreshTasteProfile}
         />
       </div>
       

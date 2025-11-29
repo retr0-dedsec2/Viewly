@@ -5,6 +5,8 @@ import { Play } from 'lucide-react'
 import SearchBar from './SearchBar'
 import LikeButton from './LikeButton'
 import AdBanner from './AdBanner'
+import TasteInsights from './TasteInsights'
+import { TasteProfile } from '@/lib/taste-profile'
 
 interface MainContentProps {
   playlist: Music[]
@@ -13,6 +15,9 @@ interface MainContentProps {
   onSearchResults?: (results: Music[]) => void
   showAds?: boolean
   onUpgradeClick?: () => void
+  tasteProfile?: TasteProfile | null
+  onTastePrompt?: (prompt: string) => void
+  onSearchLogged?: (query: string) => void
 }
 
 export default function MainContent({
@@ -22,6 +27,9 @@ export default function MainContent({
   onSearchResults,
   showAds,
   onUpgradeClick,
+  tasteProfile,
+  onTastePrompt,
+  onSearchLogged,
 }: MainContentProps) {
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
@@ -31,10 +39,16 @@ export default function MainContent({
       </div>
 
       <div className="mb-6 lg:mb-8">
-        <SearchBar onSearchResults={onSearchResults || (() => {})} />
+        <SearchBar onSearchResults={onSearchResults || (() => {})} onSearchLogged={onSearchLogged} />
       </div>
 
       {showAds && <AdBanner onUpgradeClick={onUpgradeClick} />}
+
+      {tasteProfile && (
+        <div className="mb-6 lg:mb-8">
+          <TasteInsights profile={tasteProfile} onPromptSelect={onTastePrompt} />
+        </div>
+      )}
 
       {/* Quick Access */}
       <div className="mb-8 lg:mb-12">
