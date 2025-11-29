@@ -1,14 +1,24 @@
 export const CSRF_COOKIE_NAME = 'csrf_token'
 export const CSRF_HEADER_NAME = 'X-CSRF-Token'
 
+function getCrypto(): Crypto | undefined {
+  const maybeCrypto = typeof globalThis !== 'undefined' ? (globalThis as any).crypto : undefined
+  if (!maybeCrypto) return undefined
+  if (typeof maybeCrypto.getRandomValues === 'function' || typeof maybeCrypto.randomUUID === 'function') {
+    return maybeCrypto as Crypto
+  }
+  return undefined
+}
+
 // Use Web Crypto when available (middleware / client) to avoid Node-only APIs.
 export function createCsrfToken() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return (crypto as Crypto).randomUUID().replace(/-/g, '')
+  const webCrypto = getCrypto()
+  if (webCrypto?.randomUUID) {
+    return webCrypto.randomUUID().replace(/-/g, '')
   }
-  if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+  if (webCrypto?.getRandomValues) {
     const bytes = new Uint8Array(16)
-    crypto.getRandomValues(bytes)
+    webCrypto.getRandomValues(bytes)
     return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
   }
   // Fallback to Math.random (non-crypto) for environments without Web Crypto.
