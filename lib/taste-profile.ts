@@ -54,6 +54,15 @@ const stopWords = new Set([
   'on',
   'live',
   'mix',
+  'find',
+  'play',
+  'me',
+  'my',
+  'song',
+  'songs',
+  'more',
+  'new',
+  'please',
 ])
 
 function rankFromMap(counts: Map<string, number>, limit: number) {

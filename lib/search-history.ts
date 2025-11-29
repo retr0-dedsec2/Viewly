@@ -31,6 +31,15 @@ export function getSearchHistory(userId?: string): SearchEntry[] {
   }
 }
 
+const GENERIC_QUERIES = new Set([
+  'find music for me',
+  'find me music',
+  'find me',
+  'play music',
+  'suggest music',
+  'music',
+])
+
 export function recordSearchQuery(query: string, userId?: string) {
   if (typeof window === 'undefined') return
   const key = getKey(userId)
@@ -38,6 +47,9 @@ export function recordSearchQuery(query: string, userId?: string) {
 
   const cleaned = query.trim()
   if (!cleaned) return
+
+  // Skip logging generic prompts so they don't pollute the taste profile
+  if (GENERIC_QUERIES.has(cleaned.toLowerCase())) return
 
   const history = getSearchHistory(userId)
   const deduped = history.filter(
