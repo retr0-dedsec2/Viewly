@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { Music } from 'lucide-react'
+import { withCsrfHeader } from '@/lib/csrf'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -29,9 +30,9 @@ export default function LoginPage() {
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
+        headers: withCsrfHeader({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify(body),
       })
 

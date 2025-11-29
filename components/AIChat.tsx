@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { X, Send, Bot, User } from 'lucide-react'
+import { withCsrfHeader } from '@/lib/csrf'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -53,7 +54,7 @@ export default function AIChat({ onClose, onSearchRequest }: AIChatProps) {
 
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers,
+        headers: withCsrfHeader(headers),
         body: JSON.stringify({ message: userInput }),
       })
 

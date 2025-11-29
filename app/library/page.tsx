@@ -11,6 +11,7 @@ import LikeButton from '@/components/LikeButton'
 import AdBanner from '@/components/AdBanner'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { withCsrfHeader } from '@/lib/csrf'
 
 type PlaylistTheme = {
   key: string
@@ -138,10 +139,10 @@ export default function LibraryPage() {
 
       const response = await fetch('/api/playlists', {
         method: 'POST',
-        headers: {
+        headers: withCsrfHeader({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-        },
+        }),
         body: JSON.stringify({
           name: newPlaylistName,
           description: `Created manually by user`,
@@ -186,9 +187,9 @@ export default function LibraryPage() {
 
       const response = await fetch(`/api/playlists?id=${id}`, {
         method: 'DELETE',
-        headers: {
+        headers: withCsrfHeader({
           'Authorization': `Bearer ${token}`,
-        },
+        }),
       })
 
       if (response.ok) {

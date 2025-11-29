@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { Music } from '@/types/music'
 import { convertYouTubeToMusic } from '@/lib/youtube'
+import { sanitizeSearchQuery } from '@/lib/sanitize'
 
 interface SearchBarProps {
   onSearchResults: (results: Music[]) => void
@@ -20,7 +21,13 @@ export default function SearchBar({ onSearchResults, onClose }: SearchBarProps) 
 
     setIsSearching(true)
     try {
-      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}&maxResults=20`)
+      const { sanitized, isRejected } = sanitizeSearchQuery(query)
+      if (isRejected) {
+        setIsSearching(false)
+        return
+      }
+
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(sanitized)}&maxResults=20`)
       const data = await response.json()
 
       if (data.items) {
@@ -40,7 +47,7 @@ export default function SearchBar({ onSearchResults, onClose }: SearchBarProps) 
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => setQuery(e.target.value.replace(/[<>]/g, ''))}
           placeholder="Search for songs, artists, albums..."
           className="w-full bg-spotify-light text-white px-10 sm:px-12 py-2.5 sm:py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-spotify-green placeholder-gray-400 text-sm sm:text-base transition-all"
         />

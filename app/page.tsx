@@ -11,6 +11,7 @@ import { Music } from '@/types/music'
 import { convertYouTubeToMusic } from '@/lib/youtube'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { sanitizeSearchQuery } from '@/lib/sanitize'
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -68,7 +69,10 @@ export default function Home() {
 
   const handleAISearch = async (query: string) => {
     try {
-      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`)
+      const { sanitized, isRejected } = sanitizeSearchQuery(query)
+      if (isRejected) return
+
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(sanitized)}`)
       const data = await response.json()
       
       if (data.items) {

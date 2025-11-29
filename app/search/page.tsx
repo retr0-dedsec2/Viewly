@@ -12,6 +12,7 @@ import LikeButton from '@/components/LikeButton'
 import AdBanner from '@/components/AdBanner'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { sanitizeSearchQuery } from '@/lib/sanitize'
 
 export default function SearchPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -36,10 +37,16 @@ export default function SearchPage() {
     e?.preventDefault()
     if (!query.trim() || isSearching) return
 
+    const { sanitized, isRejected } = sanitizeSearchQuery(query)
+    if (isRejected) {
+      setResults([])
+      return
+    }
+
     setIsSearching(true)
     try {
       const params = new URLSearchParams({
-        q: query,
+        q: sanitized,
         maxResults: '50',
         order: sortBy,
       })
@@ -87,7 +94,7 @@ export default function SearchPage() {
                 <input
                   type="text"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => setQuery(e.target.value.replace(/[<>]/g, ''))}
                   placeholder="Search for songs, artists, albums..."
                   className="w-full bg-spotify-light text-white px-10 sm:px-14 py-3 sm:py-4 rounded-full focus:outline-none focus:ring-2 focus:ring-spotify-green text-sm sm:text-base lg:text-lg transition-all"
                 />

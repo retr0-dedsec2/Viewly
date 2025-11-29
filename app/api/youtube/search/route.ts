@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { sanitizeSearchQuery } from '@/lib/sanitize'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const query = searchParams.get('q')
+    const rawQuery = searchParams.get('q') || ''
     const maxResults = searchParams.get('maxResults') || '10'
     const order = searchParams.get('order') || 'relevance'
 
-    if (!query) {
+    const { sanitized, isRejected } = sanitizeSearchQuery(rawQuery)
+    if (isRejected || !sanitized) {
       return NextResponse.json(
         { error: 'Query parameter is required' },
         { status: 400 }
       )
     }
+    const query = sanitized
 
     // YouTube Data API v3 endpoint
     // Note: You'll need to add your YouTube API key to .env.local
@@ -44,8 +46,11 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    const allowedOrders = new Set(['relevance', 'date', 'rating', 'viewCount'])
+    const safeOrder = allowedOrders.has(order) ? order : 'relevance'
+
     // Build YouTube API URL with order parameter
-    const orderParam = order === 'relevance' ? '' : `&order=${order}`
+    const orderParam = safeOrder === 'relevance' ? '' : `&order=${safeOrder}`
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&q=${encodeURIComponent(
         query

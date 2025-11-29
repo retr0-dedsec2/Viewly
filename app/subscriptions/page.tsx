@@ -8,6 +8,7 @@ import MobileHeader from '@/components/MobileHeader'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { getToken } from '@/lib/auth-client'
+import { withCsrfHeader } from '@/lib/csrf'
 
 type PlanId = 'FREE' | 'PREMIUM'
 
@@ -85,10 +86,10 @@ export default function SubscriptionsPage() {
 
       const res = await fetch('/api/subscriptions', {
         method: 'POST',
-        headers: {
+        headers: withCsrfHeader({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
-        },
+        }),
         body: JSON.stringify({ plan: 'FREE' }),
       })
 
@@ -121,9 +122,9 @@ export default function SubscriptionsPage() {
 
       const res = await fetch('/api/paypal/create-order', {
         method: 'POST',
-        headers: {
+        headers: withCsrfHeader({
           Authorization: `Bearer ${token}`,
-        },
+        }),
       })
 
       const data = await res.json()
@@ -175,9 +176,9 @@ export default function SubscriptionsPage() {
 
         const res = await fetch(`/api/paypal/capture?token=${paypalToken}`, {
           method: 'POST',
-          headers: {
+          headers: withCsrfHeader({
             Authorization: `Bearer ${token}`,
-          },
+          }),
         })
 
         const data = await res.json()
