@@ -7,6 +7,7 @@ import { convertYouTubeToMusic } from '@/lib/youtube'
 import { sanitizeSearchQuery } from '@/lib/sanitize'
 import { recordSearchQuery } from '@/lib/search-history'
 import { useAuth } from '@/contexts/AuthContext'
+import { getToken } from '@/lib/auth-client'
 
 interface SearchBarProps {
   onSearchResults: (results: Music[]) => void
@@ -31,7 +32,10 @@ export default function SearchBar({ onSearchResults, onClose, onSearchLogged }: 
         return
       }
 
-      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(sanitized)}&maxResults=20`)
+      const token = getToken()
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(sanitized)}&maxResults=20`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
       const data = await response.json()
 
       if (data.items) {

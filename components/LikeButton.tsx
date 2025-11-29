@@ -42,12 +42,12 @@ export default function LikeButton({ track, size = 20, className = '' }: LikeBut
     }
   }, [track.id, user])
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (!user) return
 
-    toggleLikedSong(track, user.id)
-    setLiked(!liked)
+    await toggleLikedSong(track, user.id)
+    setLiked((prev) => !prev)
   }
 
   if (!user) return null

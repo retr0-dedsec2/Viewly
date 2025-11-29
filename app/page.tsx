@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Sidebar from '@/components/Sidebar'
 import MusicPlayer from '@/components/MusicPlayer'
 import AIChat from '@/components/AIChat'
@@ -60,19 +60,34 @@ export default function Home() {
     loadPopularMusic()
   }, [])
 
-  const refreshTasteProfile = () => {
+  const refreshTasteProfile = useCallback(async () => {
     if (!user) {
       setTasteProfile(null)
       return
     }
-    const liked = getLikedSongs(user.id)
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+      const res = await fetch('/api/taste', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setTasteProfile(data.profile)
+        return
+      }
+    } catch (error) {
+      console.error('Taste profile API failed, falling back to local cache', error)
+    }
+
+    // Fallback to local data if API fails
+    const liked = await getLikedSongs(user.id)
     const searches = getSearchHistory(user.id)
     setTasteProfile(buildTasteProfile(liked, searches))
-  }
+  }, [user])
 
   useEffect(() => {
     refreshTasteProfile()
-  }, [user])
+  }, [user, refreshTasteProfile])
 
   useEffect(() => {
     if (!user) return
@@ -105,7 +120,10 @@ export default function Home() {
       if (isRejected) return
       recordSearchQuery(sanitized, user?.id)
 
-      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(sanitized)}`)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(sanitized)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
       const data = await response.json()
       
       if (data.items) {

@@ -28,24 +28,27 @@ export default function LikedPage() {
       return
     }
 
-    if (user) {
-      const songs = getLikedSongs(user.id)
-      setLikedSongs(songs)
+    const load = async () => {
+      if (user) {
+        const songs = await getLikedSongs(user.id)
+        setLikedSongs(songs)
+      }
     }
+    load()
   }, [isAuthenticated, user, router])
 
   // Refresh liked songs when user changes or when songs are liked/unliked
   useEffect(() => {
-    const handleStorageChange = () => {
+    const handleStorageChange = async () => {
       if (user) {
-        const songs = getLikedSongs(user.id)
+        const songs = await getLikedSongs(user.id)
         setLikedSongs(songs)
       }
     }
 
     window.addEventListener('storage', handleStorageChange)
     // Also check periodically for changes (since storage event doesn't fire in same tab)
-    const interval = setInterval(handleStorageChange, 500)
+    const interval = setInterval(handleStorageChange, 1000)
 
     return () => {
       window.removeEventListener('storage', handleStorageChange)
@@ -89,9 +92,9 @@ export default function LikedPage() {
     }
   }
 
-  const handleRemoveLiked = (trackId: string) => {
+  const handleRemoveLiked = async (trackId: string) => {
     if (!user) return
-    removeLikedSong(trackId, user.id)
+    await removeLikedSong(trackId, user.id)
     const updated = likedSongs.filter((s) => s.id !== trackId)
     setLikedSongs(updated)
     if (currentTrack?.id === trackId) {

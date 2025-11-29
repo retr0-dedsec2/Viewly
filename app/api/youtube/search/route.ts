@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeSearchQuery } from '@/lib/sanitize'
+import { getAuthToken } from '@/lib/auth-tokens'
+import { verifyToken } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +21,22 @@ export async function GET(request: NextRequest) {
       )
     }
     const query = sanitized
+
+    // Log search to user history when authenticated
+    try {
+      const token = getAuthToken(request)
+      const decoded = token ? verifyToken(token) : null
+      if (decoded?.userId) {
+        await prisma.searchHistory.create({
+          data: {
+            userId: decoded.userId,
+            query,
+          },
+        })
+      }
+    } catch (error) {
+      console.error('Failed to log search history:', error)
+    }
 
     // YouTube Data API v3 endpoint
     // Note: You'll need to add your YouTube API key to .env.local
