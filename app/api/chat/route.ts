@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthToken } from '@/lib/auth-tokens'
 
 export const dynamic = 'force-dynamic'
 
@@ -382,12 +383,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user ID from Authorization header
+    // Get user ID from Authorization header or auth cookie
     let userId = null
     try {
-      const authHeader = request.headers.get('Authorization')
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.replace('Bearer ', '')
+      const token = getAuthToken(request)
+      if (token) {
         const { verifyToken } = await import('@/lib/auth')
         const decoded = verifyToken(token)
         if (decoded && decoded.userId) {

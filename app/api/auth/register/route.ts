@@ -1,12 +1,13 @@
 // app/api/auth/register/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { generateToken } from "@/lib/auth";
 import { findUserByEmail, createUser } from "@/lib/auth-db";
+import { setAuthCookie } from "@/lib/auth-tokens";
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { email, password, username } = body;
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
       subscriptionPlan: user.subscriptionPlan,
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         token,
         user: {
@@ -59,6 +60,8 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
+    setAuthCookie(response, token)
+    return response
   } catch (err: any) {
     console.error("Registration error:", err);
     return NextResponse.json(

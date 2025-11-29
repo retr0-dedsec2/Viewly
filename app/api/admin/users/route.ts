@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getAuthToken } from '@/lib/auth-tokens'
 
 export const dynamic = 'force-dynamic'
 
 function isAdmin(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (!authHeader) return null
-  const token = authHeader.replace('Bearer ', '')
+  const token = getAuthToken(req)
+  if (!token) return null
   const payload = verifyToken(token)
   if (!payload || payload.role !== 'ADMIN') return null
   return payload

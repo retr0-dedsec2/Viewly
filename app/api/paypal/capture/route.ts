@@ -3,11 +3,11 @@ import paypal from '@paypal/checkout-server-sdk'
 import { verifyToken, generateToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getPayPalClient, getCredentialStatus } from '@/lib/paypal'
+import { getAuthToken, setAuthCookie } from '@/lib/auth-tokens'
 
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    const token = getAuthToken(req)
     const payload = token ? verifyToken(token) : null
 
     if (!payload) {
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       subscriptionPlan: updatedUser.subscriptionPlan,
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       token: refreshedToken,
       user: {
         id: updatedUser.id,
@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
       },
       message: 'Payment confirmed. Premium activated for 30 days.',
     })
+    setAuthCookie(response, refreshedToken)
+    return response
   } catch (error: any) {
     const message = error?.message || 'Unknown PayPal error'
     const issue = error?.result?.details?.[0]?.issue

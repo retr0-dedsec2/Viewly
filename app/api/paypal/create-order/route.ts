@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import paypal from '@paypal/checkout-server-sdk'
 import { verifyToken } from '@/lib/auth'
 import { getPayPalClient, getCredentialStatus, getMerchantEmail } from '@/lib/paypal'
+import { getAuthToken } from '@/lib/auth-tokens'
 
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    const token = getAuthToken(req)
     const payload = token ? verifyToken(token) : null
 
     if (!payload) {

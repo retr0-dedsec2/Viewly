@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getAuthToken } from '@/lib/auth-tokens'
 
 export const dynamic = 'force-dynamic'
 
 // Get user playlists
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    const token = getAuthToken(req)
+    if (!token) {
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 })
     }
 
-    const token = authHeader.replace('Bearer ', '')
     const decoded = verifyToken(token)
     if (!decoded) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
@@ -38,12 +38,11 @@ export async function GET(req: NextRequest) {
 // Create new playlist
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    const token = getAuthToken(req)
+    if (!token) {
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 })
     }
 
-    const token = authHeader.replace('Bearer ', '')
     const decoded = verifyToken(token)
     if (!decoded) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
@@ -105,12 +104,11 @@ export async function POST(req: NextRequest) {
 // Delete playlist
 export async function DELETE(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    const token = getAuthToken(req)
+    if (!token) {
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 })
     }
 
-    const token = authHeader.replace('Bearer ', '')
     const decoded = verifyToken(token)
     if (!decoded) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })

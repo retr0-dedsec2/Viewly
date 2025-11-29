@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { getCredentialStatus } from '@/lib/paypal'
+import { getAuthToken } from '@/lib/auth-tokens'
 
 export async function GET(req: NextRequest) {
   // Require authentication; allow admins to inspect credential presence without exposing secrets.
-  const authHeader = req.headers.get('authorization')
-  const token = authHeader?.replace('Bearer ', '')
+  const token = getAuthToken(req)
   const payload = token ? verifyToken(token) : null
 
   if (!payload || payload.role !== 'ADMIN') {

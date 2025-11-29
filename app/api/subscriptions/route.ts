@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, generateToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getAuthToken, setAuthCookie } from '@/lib/auth-tokens'
 
 export const dynamic = 'force-dynamic'
 
 function getAuthPayload(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (!authHeader) return null
-  const token = authHeader.replace('Bearer ', '')
+  const token = getAuthToken(req)
+  if (!token) return null
   return verifyToken(token)
 }
 
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       subscriptionPlan: updatedUser.subscriptionPlan,
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       token,
       user: {
         id: updatedUser.id,
@@ -89,6 +89,8 @@ export async function POST(req: NextRequest) {
         ? 'Subscription upgraded to Premium for 30 days.'
         : 'Switched to Free plan. Ads have been re-enabled.',
     })
+    setAuthCookie(response, token)
+    return response
   } catch (error) {
     console.error('Subscription update error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
