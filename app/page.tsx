@@ -21,6 +21,7 @@ export default function Home() {
   const [currentTrack, setCurrentTrack] = useState<Music | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [playlist, setPlaylist] = useState<Music[]>([])
+  const [autoRecommended, setAutoRecommended] = useState(false)
   const [showAIChat, setShowAIChat] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(-1)
   const [tasteProfile, setTasteProfile] = useState<TasteProfile | null>(null)
@@ -85,9 +86,60 @@ export default function Home() {
     setTasteProfile(buildTasteProfile(liked, searches))
   }, [user])
 
+  const buildRecommendationQuery = (profile: TasteProfile | null) => {
+    if (!profile) return null
+    if (profile.topArtists.length > 0) return profile.topArtists[0]
+    if (profile.topGenres.length > 0) return `${profile.topGenres[0]} music`
+    if (profile.favoriteMoods.length > 0) return `${profile.favoriteMoods[0]} music`
+    if (profile.keywords.length > 0) return profile.keywords[0]
+    return null
+  }
+
+  const loadPersonalizedMusic = useCallback(
+    async (profile: TasteProfile | null) => {
+      const query = buildRecommendationQuery(profile)
+      if (!query || !user) return
+
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        const response = await fetch(
+          `/api/youtube/search?q=${encodeURIComponent(query)}&maxResults=20&order=viewCount`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          }
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.items) {
+            const musicTracks = data.items.map((item: any) => convertYouTubeToMusic(item))
+            setPlaylist(musicTracks)
+            setAutoRecommended(true)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading personalized music:', error)
+      }
+    },
+    [user]
+  )
+
   useEffect(() => {
     refreshTasteProfile()
   }, [user, refreshTasteProfile])
+
+  useEffect(() => {
+    if (!user) {
+      setAutoRecommended(false)
+    }
+  }, [user])
+
+  // When taste profile updates, auto-load recommendations once for the session
+  useEffect(() => {
+    if (user && tasteProfile && !autoRecommended) {
+      loadPersonalizedMusic(tasteProfile)
+    }
+  }, [user, tasteProfile, autoRecommended, loadPersonalizedMusic])
 
   useEffect(() => {
     if (!user) return
