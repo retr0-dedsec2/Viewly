@@ -1,97 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildTasteProfile } from '@/lib/taste-profile'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, likedSongs, searchHistory } = await request.json()
+    const { userId } = await request.json()
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
-    // Get user's liked songs and search history from database
-    const userLikedSongs = await prisma.likedSong.findMany({
-      where: { userId },
-      orderBy: { likedAt: 'desc' },
-      take: 20,
-    })
+    const [userLikedSongs, userSearchHistory] = await Promise.all([
+      prisma.likedSong.findMany({
+        where: { userId },
+        orderBy: { likedAt: 'desc' },
+        take: 30,
+      }),
+      prisma.searchHistory.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+      }),
+    ])
 
-    const userSearchHistory = await prisma.searchHistory.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    })
+    const profile = buildTasteProfile(
+      userLikedSongs.map((song) => ({
+        title: song.trackTitle,
+        artist: song.trackArtist,
+        album: song.trackAlbum,
+        likedAt: song.likedAt,
+      })),
+      userSearchHistory.map((entry) => ({ query: entry.query, createdAt: entry.createdAt }))
+    )
 
-    // Analyze user preferences
-    const artists = new Map<string, number>()
-    const genres = new Map<string, number>()
+    const recommendations: Array<{ type: string; query: string; reason: string }> = []
 
-    userLikedSongs.forEach((song) => {
-      const artist = song.trackArtist
-      artists.set(artist, (artists.get(artist) || 0) + 1)
-    })
-
-    userSearchHistory.forEach((search) => {
-      // Extract potential genre/keywords from search queries
-      const keywords = search.query.toLowerCase().split(' ')
-      keywords.forEach((keyword) => {
-        if (keyword.length > 3) {
-          genres.set(keyword, (genres.get(keyword) || 0) + 1)
-        }
-      })
-    })
-
-    // Get top artists and genres
-    const topArtists = Array.from(artists.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([artist]) => artist)
-
-    const topGenres = Array.from(genres.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([genre]) => genre)
-
-    // Generate AI-powered search queries
-    const recommendations = []
-
-    // Recommend similar artists
-    for (const artist of topArtists) {
+    profile.topArtists.slice(0, 3).forEach((artist) => {
       recommendations.push({
         type: 'similar_artist',
-        query: `similar to ${artist}`,
-        reason: `Because you like ${artist}`,
+        query: `songs similar to ${artist}`,
+        reason: `Because you keep liking ${artist}`,
       })
-    }
+    })
 
-    // Recommend based on search history
-    for (const search of userSearchHistory.slice(0, 3)) {
-      recommendations.push({
-        type: 'related_search',
-        query: search.query,
-        reason: 'Based on your recent searches',
-      })
-    }
-
-    // Generate genre-based recommendations
-    for (const genre of topGenres) {
+    profile.topGenres.slice(0, 3).forEach((genre) => {
       recommendations.push({
         type: 'genre',
         query: `${genre} music`,
         reason: `Popular ${genre} tracks`,
+      })
+    })
+
+    profile.favoriteMoods.slice(0, 2).forEach((mood) => {
+      recommendations.push({
+        type: 'mood',
+        query: `${mood} playlist`,
+        reason: `Matches your ${mood} sessions`,
+      })
+    })
+
+    profile.recentSearches.slice(0, 4).forEach((search) => {
+      recommendations.push({
+        type: 'related_search',
+        query: search,
+        reason: 'Based on your recent searches',
+      })
+    })
+
+    // Add a keyword-driven exploration hook for variety
+    if (profile.keywords[0]) {
+      recommendations.push({
+        type: 'keyword',
+        query: `${profile.keywords[0]} music`,
+        reason: `You look for ${profile.keywords[0]} often`,
       })
     }
 
     return NextResponse.json({
       recommendations: recommendations.slice(0, 10),
       preferences: {
-        topArtists,
-        topGenres,
+        topArtists: profile.topArtists,
+        topGenres: profile.topGenres,
+        favoriteMoods: profile.favoriteMoods,
         totalLikedSongs: userLikedSongs.length,
         totalSearches: userSearchHistory.length,
+        summary: profile.summary,
       },
     })
   } catch (error) {
