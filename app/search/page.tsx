@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Search, Filter, Music } from 'lucide-react'
 import { Music as MusicType } from '@/types/music'
 import { convertYouTubeToMusic } from '@/lib/youtube'
 import Sidebar from '@/components/Sidebar'
-import MusicPlayer from '@/components/MusicPlayer'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import LikeButton from '@/components/LikeButton'
@@ -13,19 +12,18 @@ import AdBanner from '@/components/AdBanner'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { sanitizeSearchQuery } from '@/lib/sanitize'
+import { usePlayer } from '@/contexts/PlayerContext'
 
 export default function SearchPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<MusicType[]>([])
   const [isSearching, setIsSearching] = useState(false)
-  const [currentTrack, setCurrentTrack] = useState<MusicType | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
   const [filter, setFilter] = useState<'all' | 'songs' | 'artists' | 'albums'>('all')
   const [sortBy, setSortBy] = useState<'relevance' | 'date' | 'rating' | 'viewCount'>('relevance')
-  const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
+  const { currentTrack, playQueue } = usePlayer()
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -66,12 +64,8 @@ export default function SearchPage() {
   }
 
   const handlePlay = (track: MusicType) => {
-    setCurrentTrack(track)
-    setIsPlaying(true)
-  }
-
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying)
+    const index = results.findIndex((t) => t.id === track.id)
+    playQueue(results, index >= 0 ? index : 0)
   }
 
   const showAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : true
@@ -211,12 +205,6 @@ export default function SearchPage() {
           )}
         </div>
       </div>
-      <MusicPlayer
-        track={currentTrack}
-        isPlaying={isPlaying}
-        onTogglePlay={togglePlayPause}
-        audioRef={audioRef}
-      />
     </div>
   )
 }

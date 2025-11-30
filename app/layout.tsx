@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { PlayerProvider } from '@/contexts/PlayerContext'
 
 export const metadata: Metadata = {
   title: 'Viewly - AI Music Assistant',
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <PlayerProvider>{children}</PlayerProvider>
+        </AuthProvider>
       </body>
     </html>
   )

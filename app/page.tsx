@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Sidebar from '@/components/Sidebar'
-import MusicPlayer from '@/components/MusicPlayer'
 import AIChat from '@/components/AIChat'
 import MainContent from '@/components/MainContent'
 import MobileMenu from '@/components/MobileMenu'
@@ -15,19 +14,17 @@ import { sanitizeSearchQuery } from '@/lib/sanitize'
 import { getLikedSongs } from '@/lib/liked-songs'
 import { getSearchHistory, recordSearchQuery } from '@/lib/search-history'
 import { buildTasteProfile, TasteProfile } from '@/lib/taste-profile'
+import { usePlayer } from '@/contexts/PlayerContext'
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [currentTrack, setCurrentTrack] = useState<Music | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
   const [playlist, setPlaylist] = useState<Music[]>([])
   const [autoRecommended, setAutoRecommended] = useState(false)
   const [showAIChat, setShowAIChat] = useState(false)
-  const [currentIndex, setCurrentIndex] = useState(-1)
   const [tasteProfile, setTasteProfile] = useState<TasteProfile | null>(null)
-  const audioRef = useRef<HTMLAudioElement>(null)
   const { user } = useAuth()
   const router = useRouter()
+  const { playQueue, currentTrack } = usePlayer()
 
   // Load popular YouTube music on mount
   useEffect(() => {
@@ -156,9 +153,7 @@ export default function Home() {
 
   const handlePlay = (track: Music) => {
     const index = playlist.findIndex((t) => t.id === track.id)
-    setCurrentIndex(index)
-    setCurrentTrack(track)
-    setIsPlaying(true)
+    playQueue(playlist, index >= 0 ? index : 0)
   }
 
   const handleSearchResults = (results: Music[]) => {
@@ -185,35 +180,6 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error searching via AI:', error)
-    }
-  }
-
-  const handleNext = () => {
-    if (playlist.length > 0 && currentIndex >= 0) {
-      const nextIndex = (currentIndex + 1) % playlist.length
-      setCurrentIndex(nextIndex)
-      setCurrentTrack(playlist[nextIndex])
-      setIsPlaying(true)
-    }
-  }
-
-  const handlePrevious = () => {
-    if (playlist.length > 0 && currentIndex >= 0) {
-      const prevIndex = currentIndex === 0 ? playlist.length - 1 : currentIndex - 1
-      setCurrentIndex(prevIndex)
-      setCurrentTrack(playlist[prevIndex])
-      setIsPlaying(true)
-    }
-  }
-
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying)
-    if (audioRef.current && !currentTrack?.videoId) {
-      if (isPlaying) {
-        audioRef.current.pause()
-      } else {
-        audioRef.current.play()
-      }
     }
   }
 
@@ -246,17 +212,6 @@ export default function Home() {
           onSearchLogged={refreshTasteProfile}
         />
       </div>
-      
-      {/* Music Player */}
-      <MusicPlayer
-        track={currentTrack}
-        isPlaying={isPlaying}
-        onTogglePlay={togglePlayPause}
-        audioRef={audioRef}
-        onNext={handleNext}
-        onPrevious={handlePrevious}
-      />
-      
       {/* AI Chat */}
       {showAIChat && (
         <AIChat 

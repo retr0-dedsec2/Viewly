@@ -20,6 +20,11 @@ export default function MusicPlayer({ track, isPlaying, onTogglePlay, audioRef, 
   const [volume, setVolume] = useState(100)
   const youtubePlayerRef = useRef<YoutubePlayerRef>(null)
 
+  useEffect(() => {
+    setCurrentTime(0)
+    setDuration(0)
+  }, [track?.id])
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
@@ -51,6 +56,12 @@ export default function MusicPlayer({ track, isPlaying, onTogglePlay, audioRef, 
     }
   }
 
+  useEffect(() => {
+    if (audioRef?.current) {
+      audioRef.current.volume = volume / 100
+    }
+  }, [volume, audioRef])
+
   if (!track) return null
 
   const displayDuration = duration || track.duration
@@ -67,7 +78,15 @@ export default function MusicPlayer({ track, isPlaying, onTogglePlay, audioRef, 
           onStateChange={handleStateChange}
         />
       )}
-      {track.url && !track.videoId && audioRef && <audio ref={audioRef} src={track.url} />}
+      {track.url && !track.videoId && audioRef && (
+        <audio
+          ref={audioRef}
+          src={track.url}
+          onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime, e.currentTarget.duration)}
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+          onEnded={onNext}
+        />
+      )}
       
       {/* Track Info - Hidden on mobile, visible on tablet+ */}
       <div className="hidden md:flex items-center gap-3 lg:gap-4 flex-1 min-w-0">

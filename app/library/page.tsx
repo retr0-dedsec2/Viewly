@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Library, Plus, Play, Trash2 } from 'lucide-react'
 import { Music } from '@/types/music'
 import Sidebar from '@/components/Sidebar'
-import MusicPlayer from '@/components/MusicPlayer'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import LikeButton from '@/components/LikeButton'
@@ -12,6 +11,7 @@ import AdBanner from '@/components/AdBanner'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { withCsrfHeader } from '@/lib/csrf'
+import { usePlayer } from '@/contexts/PlayerContext'
 
 type PlaylistTheme = {
   key: string
@@ -72,14 +72,12 @@ const getPlaylistTheme = (id: string, name: string) => {
 export default function LibraryPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [playlists, setPlaylists] = useState<Array<{ id: string; name: string; tracks: Music[] }>>([])
-  const [currentTrack, setCurrentTrack] = useState<Music | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
+  const { currentTrack, playQueue } = usePlayer()
   const showAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : false
 
   useEffect(() => {
@@ -215,13 +213,9 @@ export default function LibraryPage() {
     }
   }
 
-  const handlePlay = (track: Music) => {
-    setCurrentTrack(track)
-    setIsPlaying(true)
-  }
-
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying)
+  const handlePlay = (track: Music, tracks: Music[]) => {
+    const index = tracks.findIndex((t) => t.id === track.id)
+    playQueue(tracks, index >= 0 ? index : 0)
   }
 
   const selectedPlaylistData = playlists.find((p) => p.id === selectedPlaylist)
@@ -431,7 +425,7 @@ export default function LibraryPage() {
                       className={`flex items-center gap-4 p-3 rounded-lg hover:bg-spotify-light cursor-pointer transition-colors ${
                         currentTrack?.id === track.id ? 'bg-spotify-light' : ''
                       }`}
-                      onClick={() => handlePlay(track)}
+                      onClick={() => handlePlay(track, selectedPlaylistData.tracks)}
                     >
                       <div className="w-12 h-12 flex-shrink-0 relative group">
                         <img
@@ -471,12 +465,6 @@ export default function LibraryPage() {
             </div>
           )}
         </div>
-        <MusicPlayer
-          track={currentTrack}
-          isPlaying={isPlaying}
-          onTogglePlay={togglePlayPause}
-          audioRef={audioRef}
-        />
       </div>
     </div>
   )

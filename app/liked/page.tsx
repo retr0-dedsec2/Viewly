@@ -1,26 +1,23 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Heart, Play, Trash2 } from 'lucide-react'
 import { Music } from '@/types/music'
 import Sidebar from '@/components/Sidebar'
-import MusicPlayer from '@/components/MusicPlayer'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import LikeButton from '@/components/LikeButton'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getLikedSongs, removeLikedSong } from '@/lib/liked-songs'
+import { usePlayer } from '@/contexts/PlayerContext'
 
 export default function LikedPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [likedSongs, setLikedSongs] = useState<Music[]>([])
-  const [currentTrack, setCurrentTrack] = useState<Music | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentIndex, setCurrentIndex] = useState(-1)
-  const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
+  const { currentTrack, currentIndex, playQueue, clear } = usePlayer()
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -58,38 +55,7 @@ export default function LikedPage() {
 
   const handlePlay = (track: Music) => {
     const index = likedSongs.findIndex((t) => t.id === track.id)
-    setCurrentIndex(index)
-    setCurrentTrack(track)
-    setIsPlaying(true)
-  }
-
-  const handleNext = () => {
-    if (likedSongs.length > 0 && currentIndex >= 0) {
-      const nextIndex = (currentIndex + 1) % likedSongs.length
-      setCurrentIndex(nextIndex)
-      setCurrentTrack(likedSongs[nextIndex])
-      setIsPlaying(true)
-    }
-  }
-
-  const handlePrevious = () => {
-    if (likedSongs.length > 0 && currentIndex >= 0) {
-      const prevIndex = currentIndex === 0 ? likedSongs.length - 1 : currentIndex - 1
-      setCurrentIndex(prevIndex)
-      setCurrentTrack(likedSongs[prevIndex])
-      setIsPlaying(true)
-    }
-  }
-
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying)
-    if (audioRef.current && !currentTrack?.videoId) {
-      if (isPlaying) {
-        audioRef.current.pause()
-      } else {
-        audioRef.current.play()
-      }
-    }
+    playQueue(likedSongs, index >= 0 ? index : 0)
   }
 
   const handleRemoveLiked = async (trackId: string) => {
@@ -98,9 +64,12 @@ export default function LikedPage() {
     const updated = likedSongs.filter((s) => s.id !== trackId)
     setLikedSongs(updated)
     if (currentTrack?.id === trackId) {
-      setCurrentTrack(null)
-      setIsPlaying(false)
-      setCurrentIndex(-1)
+      if (updated.length > 0) {
+        const nextIndex = Math.max(Math.min(currentIndex, updated.length - 1), 0)
+        playQueue(updated, nextIndex)
+      } else {
+        clear()
+      }
     }
   }
 
@@ -152,7 +121,7 @@ export default function LikedPage() {
                   <button
                     onClick={() => {
                       if (likedSongs.length > 0) {
-                        handlePlay(likedSongs[0])
+                        playQueue(likedSongs, 0)
                       }
                     }}
                     className="w-12 h-12 sm:w-14 sm:h-14 bg-spotify-green hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
@@ -223,14 +192,6 @@ export default function LikedPage() {
             )}
           </div>
         </div>
-        <MusicPlayer
-          track={currentTrack}
-          isPlaying={isPlaying}
-          onTogglePlay={togglePlayPause}
-          audioRef={audioRef}
-          onNext={handleNext}
-          onPrevious={handlePrevious}
-        />
       </div>
     </div>
   )
