@@ -1,15 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, LogOut, Settings, Music, Crown } from 'lucide-react'
+import { User, LogOut, Settings, Music, Crown, ShieldCheck } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { withCsrfHeader } from '@/lib/csrf'
 
 export default function ProfilePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [twoFactorUpdating, setTwoFactorUpdating] = useState(false)
+  const [twoFactorError, setTwoFactorError] = useState('')
   const { user, logout } = useAuth()
   const router = useRouter()
   const isPremium = user?.subscriptionPlan === 'PREMIUM'
@@ -23,6 +26,32 @@ export default function ProfilePage() {
   const handleLogout = () => {
     logout()
     router.push('/login')
+  }
+
+  const toggleTwoFactor = async () => {
+    if (!user) return
+    setTwoFactorError('')
+    setTwoFactorUpdating(true)
+    try {
+      const res = await fetch('/api/auth/two-factor', {
+        method: 'PATCH',
+        headers: withCsrfHeader({
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        }),
+        body: JSON.stringify({ enabled: !user.twoFactorEnabled }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Unable to update 2FA')
+      }
+      // Refresh page state
+      window.location.reload()
+    } catch (err: any) {
+      setTwoFactorError(err.message || 'Unable to update 2FA')
+    } finally {
+      setTwoFactorUpdating(false)
+    }
   }
 
   if (!user) {
@@ -91,6 +120,28 @@ export default function ProfilePage() {
                 </div>
                 <button className="text-spotify-green hover:text-green-400">
                   Edit
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-spotify-gray rounded-lg">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck size={20} className={user.twoFactorEnabled ? 'text-green-400' : 'text-gray-400'} />
+                  <div>
+                    <p className="text-white font-medium">Two-factor authentication</p>
+                    <p className="text-gray-400 text-sm">
+                      {user.twoFactorEnabled ? 'Enabled - email codes required at login' : 'Add a second step with email codes'}
+                    </p>
+                    {twoFactorError && (
+                      <p className="text-red-400 text-xs mt-1">{twoFactorError}</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={toggleTwoFactor}
+                  disabled={twoFactorUpdating}
+                  className="text-spotify-green hover:text-green-400 disabled:opacity-50"
+                >
+                  {twoFactorUpdating ? 'Saving...' : user.twoFactorEnabled ? 'Disable' : 'Enable'}
                 </button>
               </div>
 

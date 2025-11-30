@@ -23,6 +23,7 @@ export async function createUser(email: string, username: string, hashedPassword
       subscriptionPlan: 'FREE',
       subscriptionExpiresAt: null,
       hasAds: true,
+      twoFactorEnabled: false,
     },
   })
 }
@@ -61,6 +62,35 @@ export async function updateUserRole(userId: string, role: 'USER' | 'ADMIN') {
   return prisma.user.update({
     where: { id: userId },
     data: { role },
+  })
+}
+
+export async function setTwoFactorCode(userId: string, codeHash: string, expiresAt: Date) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      twoFactorCode: codeHash,
+      twoFactorExpiresAt: expiresAt,
+    },
+  })
+}
+
+export async function clearTwoFactorCode(userId: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      twoFactorCode: null,
+      twoFactorExpiresAt: null,
+    },
+  })
+}
+
+export async function setTwoFactorEnabled(userId: string, enabled: boolean) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      twoFactorEnabled: enabled,
+    },
   })
 }
 

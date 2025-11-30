@@ -52,6 +52,17 @@ npm run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+### Two-factor authentication & email codes
+- Configure SMTP credentials in `.env.local` to send verification emails:
+```
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your_smtp_username
+SMTP_PASS=your_smtp_password
+EMAIL_FROM="Viewly <noreply@example.com>"
+```
+- Users can enable/disable 2FA from the Profile page. When enabled, a 6-digit code is emailed after password entry.
+
 ## Database Setup
 
 The application uses Prisma with SQLite for data persistence. The database stores:

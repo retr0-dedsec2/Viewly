@@ -7,6 +7,7 @@ export interface User {
   subscriptionPlan: 'FREE' | 'PREMIUM'
   subscriptionExpiresAt?: string | null
   hasAds?: boolean
+  twoFactorEnabled?: boolean
   createdAt: string
 }
 

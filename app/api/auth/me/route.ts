@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
         subscriptionPlan: user.subscriptionPlan,
         subscriptionExpiresAt: user.subscriptionExpiresAt,
         hasAds: user.hasAds,
+        twoFactorEnabled: user.twoFactorEnabled,
         createdAt: user.createdAt,
       },
     })

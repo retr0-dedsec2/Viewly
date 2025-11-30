@@ -51,13 +51,14 @@ export async function POST(req: NextRequest) {
           email: user.email,
           username: user.username,
           avatar: user.avatar,
-          role: user.role,
-          subscriptionPlan: user.subscriptionPlan,
-          subscriptionExpiresAt: user.subscriptionExpiresAt,
-          hasAds: user.hasAds,
-          createdAt: user.createdAt,
-        },
+        role: user.role,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionExpiresAt: user.subscriptionExpiresAt,
+        hasAds: user.hasAds,
+        twoFactorEnabled: user.twoFactorEnabled,
+        createdAt: user.createdAt,
       },
+    },
       { status: 201 }
     );
     setAuthCookie(response, token)

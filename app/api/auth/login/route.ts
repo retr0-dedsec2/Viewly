@@ -2,8 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { generateToken } from "@/lib/auth";
-import { findUserByEmail } from "@/lib/auth-db";
+import { findUserByEmail, setTwoFactorCode } from "@/lib/auth-db";
 import { setAuthCookie } from "@/lib/auth-tokens";
+import { sendTwoFactorCode } from "@/lib/email";
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (user.twoFactorEnabled) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      const codeHash = await bcrypt.hash(code, 10)
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+      await setTwoFactorCode(user.id, codeHash, expiresAt)
+      await sendTwoFactorCode(user.email, code)
+      return NextResponse.json({
+        requiresTwoFactor: true,
+        userId: user.id,
+        message: 'Verification code sent to your email',
+      })
+    }
+
     // Generate JWT token
     const token = generateToken({
       userId: user.id,
@@ -54,13 +68,14 @@ export async function POST(req: NextRequest) {
           email: user.email,
           username: user.username,
           avatar: user.avatar,
-          role: user.role,
-          subscriptionPlan: user.subscriptionPlan,
-          subscriptionExpiresAt: user.subscriptionExpiresAt,
-          hasAds: user.hasAds,
-          createdAt: user.createdAt,
-        },
+        role: user.role,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionExpiresAt: user.subscriptionExpiresAt,
+        hasAds: user.hasAds,
+        twoFactorEnabled: user.twoFactorEnabled,
+        createdAt: user.createdAt,
       },
+    },
       { status: 200 }
     );
     setAuthCookie(response, token)
