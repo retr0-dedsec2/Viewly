@@ -43,6 +43,9 @@ npx prisma migrate dev --name init
 DATABASE_URL="file:./dev.db"
 YOUTUBE_API_KEY=your_youtube_api_key_here
 JWT_SECRET=your-secret-key-change-in-production
+# Optional: Google AdSense for free users
+NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-xxxxxxxxxxxxxxxx
+NEXT_PUBLIC_ADSENSE_SLOT=1234567890
 ```
 
 4. Run the development server:

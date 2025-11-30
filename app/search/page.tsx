@@ -9,6 +9,7 @@ import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import LikeButton from '@/components/LikeButton'
 import AdBanner from '@/components/AdBanner'
+import GoogleAd from '@/components/GoogleAd'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { sanitizeSearchQuery } from '@/lib/sanitize'
@@ -150,6 +151,7 @@ export default function SearchPage() {
             </div>
 
             {showAds && <AdBanner onUpgradeClick={() => router.push('/subscriptions')} />}
+            {showAds && <GoogleAd className="mb-6" />}
           </div>
 
           {results.length > 0 ? (

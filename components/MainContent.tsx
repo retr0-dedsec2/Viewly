@@ -5,6 +5,7 @@ import { Play } from 'lucide-react'
 import SearchBar from './SearchBar'
 import LikeButton from './LikeButton'
 import AdBanner from './AdBanner'
+import GoogleAd from './GoogleAd'
 import TasteInsights from './TasteInsights'
 import { TasteProfile } from '@/lib/taste-profile'
 
@@ -43,6 +44,7 @@ export default function MainContent({
       </div>
 
       {showAds && <AdBanner onUpgradeClick={onUpgradeClick} />}
+      {showAds && <GoogleAd className="mb-8" />}
 
       {/* Quick Access */}
       <div className="mb-8 lg:mb-12">

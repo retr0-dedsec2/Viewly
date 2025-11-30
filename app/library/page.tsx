@@ -8,6 +8,7 @@ import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
 import LikeButton from '@/components/LikeButton'
 import AdBanner from '@/components/AdBanner'
+import GoogleAd from '@/components/GoogleAd'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { withCsrfHeader } from '@/lib/csrf'
@@ -248,6 +249,7 @@ export default function LibraryPage() {
             {showAds && (
               <AdBanner onUpgradeClick={() => router.push('/subscriptions')} />
             )}
+            {showAds && <GoogleAd className="mb-6" />}
 
             {showCreateForm && (
               <div className="bg-spotify-light p-4 rounded-lg mb-4">
