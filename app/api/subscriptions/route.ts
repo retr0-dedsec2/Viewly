@@ -35,7 +35,24 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ subscription: user })
+  const latestPayment = await prisma.payment.findFirst({
+    where: { userId: payload.userId },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return NextResponse.json({
+    subscription: user,
+    latestPayment: latestPayment
+      ? {
+          id: latestPayment.id,
+          status: latestPayment.status,
+          amount: latestPayment.amount,
+          currency: latestPayment.currency,
+          createdAt: latestPayment.createdAt,
+          orderId: latestPayment.orderId,
+        }
+      : null,
+  })
 }
 
 export async function POST(req: NextRequest) {

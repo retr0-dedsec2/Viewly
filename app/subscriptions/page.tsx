@@ -11,6 +11,16 @@ import { getToken } from '@/lib/auth-client'
 import { withCsrfHeader } from '@/lib/csrf'
 
 type PlanId = 'FREE' | 'PREMIUM'
+type PaymentStatus = 'CREATED' | 'APPROVED' | 'COMPLETED' | 'CANCELLED' | 'FAILED'
+
+type PaymentInfo = {
+  id: string
+  status: PaymentStatus
+  amount: number
+  currency: string
+  createdAt: string
+  orderId: string
+}
 
 const plans: Array<{
   id: PlanId
@@ -61,6 +71,7 @@ export default function SubscriptionsPage() {
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null)
   const [message, setMessage] = useState('')
   const [processingReturn, setProcessingReturn] = useState(false)
+  const [latestPayment, setLatestPayment] = useState<PaymentInfo | null>(null)
   const { user, login, isAuthenticated } = useAuth()
   const router = useRouter()
 
@@ -71,6 +82,37 @@ export default function SubscriptionsPage() {
   }, [isAuthenticated, router])
 
   const currentPlan = (user?.subscriptionPlan ?? 'FREE') as PlanId
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const controller = new AbortController()
+    const fetchStatus = async () => {
+      try {
+        const token = getToken()
+        if (!token) return
+
+        const res = await fetch('/api/subscriptions', {
+          headers: withCsrfHeader({
+            Authorization: `Bearer ${token}`,
+          }),
+          signal: controller.signal,
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (data?.latestPayment) {
+          setLatestPayment(data.latestPayment)
+        } else {
+          setLatestPayment(null)
+        }
+      } catch (error) {
+        if ((error as any).name === 'AbortError') return
+        console.error('Failed to fetch subscription status', error)
+      }
+    }
+
+    fetchStatus()
+    return () => controller.abort()
+  }, [isAuthenticated])
 
   const handleFreePlan = async () => {
     if (loadingPlan || !user) return
@@ -200,6 +242,19 @@ export default function SubscriptionsPage() {
 
     if (status === 'cancel') {
       setMessage('Payment cancelled.')
+      if (paypalToken) {
+        const token = getToken()
+        if (token) {
+          fetch(`/api/paypal/cancel?token=${paypalToken}`, {
+            method: 'POST',
+            headers: withCsrfHeader({
+              Authorization: `Bearer ${token}`,
+            }),
+          }).catch(() => {
+            /* best effort */
+          })
+        }
+      }
       clearParams()
       return
     }
@@ -240,6 +295,30 @@ export default function SubscriptionsPage() {
               <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-spotify-light text-gray-100 text-sm">
                 <ShieldAlert size={16} />
                 <span>{message}</span>
+              </div>
+            )}
+            {latestPayment && (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div className="bg-spotify-light/60 border border-white/5 rounded-lg p-3">
+                  <p className="text-gray-400 uppercase text-[11px] tracking-wide">Dernier paiement</p>
+                  <p className="text-white font-semibold">
+                    {latestPayment.amount.toFixed(2)} {latestPayment.currency}
+                  </p>
+                </div>
+                <div className="bg-spotify-light/60 border border-white/5 rounded-lg p-3">
+                  <p className="text-gray-400 uppercase text-[11px] tracking-wide">Statut</p>
+                  <p
+                    className={`font-semibold ${
+                      latestPayment.status === 'COMPLETED' ? 'text-spotify-green' : 'text-yellow-300'
+                    }`}
+                  >
+                    {latestPayment.status}
+                  </p>
+                </div>
+                <div className="bg-spotify-light/60 border border-white/5 rounded-lg p-3">
+                  <p className="text-gray-400 uppercase text-[11px] tracking-wide">Commande</p>
+                  <p className="text-white font-semibold truncate">{latestPayment.orderId}</p>
+                </div>
               </div>
             )}
           </div>

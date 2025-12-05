@@ -3,6 +3,8 @@ import paypal from '@paypal/checkout-server-sdk'
 import { verifyToken } from '@/lib/auth'
 import { getPayPalClient, getCredentialStatus, getMerchantEmail } from '@/lib/paypal'
 import { getAuthToken } from '@/lib/auth-tokens'
+import { prisma } from '@/lib/prisma'
+import { PaymentStatus, SubscriptionPlan } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +50,27 @@ export async function POST(req: NextRequest) {
     if (!approvalLink?.href) {
       return NextResponse.json({ error: 'Unable to create PayPal order' }, { status: 400 })
     }
+
+    await prisma.payment.upsert({
+      where: { orderId: order.result.id },
+      create: {
+        orderId: order.result.id,
+        userId: payload.userId,
+        plan: SubscriptionPlan.PREMIUM,
+        status: PaymentStatus.CREATED,
+        amount: Number(purchaseUnit.amount.value),
+        currency: purchaseUnit.amount.currency_code,
+        raw: order.result,
+      },
+      update: {
+        userId: payload.userId,
+        plan: SubscriptionPlan.PREMIUM,
+        status: PaymentStatus.CREATED,
+        amount: Number(purchaseUnit.amount.value),
+        currency: purchaseUnit.amount.currency_code,
+        raw: order.result,
+      },
+    })
 
     return NextResponse.json({
       approvalUrl: approvalLink.href,

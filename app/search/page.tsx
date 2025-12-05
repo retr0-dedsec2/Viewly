@@ -14,6 +14,13 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { sanitizeSearchQuery } from '@/lib/sanitize'
 import { usePlayer } from '@/contexts/PlayerContext'
+import { buildTargetedQuery, detectMusicIntent, scoreTrackAgainstIntent } from '@/lib/music-intent'
+import { withCsrfHeader } from '@/lib/csrf'
+
+type TasteProfile = {
+  topArtists: string[]
+  topGenres: string[]
+}
 
 export default function SearchPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -22,6 +29,8 @@ export default function SearchPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [filter, setFilter] = useState<'all' | 'songs' | 'artists' | 'albums'>('all')
   const [sortBy, setSortBy] = useState<'relevance' | 'date' | 'rating' | 'viewCount'>('relevance')
+  const [tasteProfile, setTasteProfile] = useState<TasteProfile>({ topArtists: [], topGenres: [] })
+  const [intentNote, setIntentNote] = useState('')
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
   const { currentTrack, playQueue } = usePlayer()
@@ -31,6 +40,37 @@ export default function SearchPage() {
       router.push('/login')
     }
   }, [isAuthenticated, router])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const controller = new AbortController()
+    const fetchTaste = async () => {
+      try {
+        const res = await fetch('/api/ai/recommendations', {
+          method: 'POST',
+          headers: withCsrfHeader({
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify({ userId: user.id }),
+          signal: controller.signal,
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (data?.preferences) {
+          setTasteProfile({
+            topArtists: data.preferences.topArtists || [],
+            topGenres: data.preferences.topGenres || [],
+          })
+        }
+      } catch (error) {
+        if ((error as any).name === 'AbortError') return
+        console.error('Failed to load taste profile', error)
+      }
+    }
+
+    fetchTaste()
+    return () => controller.abort()
+  }, [user?.id])
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -44,8 +84,21 @@ export default function SearchPage() {
 
     setIsSearching(true)
     try {
+      const intent = detectMusicIntent(sanitized, tasteProfile.topArtists, tasteProfile.topGenres)
+      const targetedQuery = buildTargetedQuery(sanitized, intent)
+
+      setIntentNote(
+        intent.artist
+          ? `Ciblage sur ${intent.artist} ${intent.genre ? `(${intent.genre})` : ''}`
+          : intent.genre
+            ? `Recherche affinée sur le genre ${intent.genre}`
+            : intent.mood
+              ? `Recherche ${intent.mood} priorisée`
+              : '',
+      )
+
       const params = new URLSearchParams({
-        q: sanitized,
+        q: targetedQuery,
         maxResults: '50',
         order: sortBy,
       })
@@ -54,8 +107,15 @@ export default function SearchPage() {
       const data = await response.json()
 
       if (data.items) {
-        const musicResults = data.items.map((item: any) => convertYouTubeToMusic(item))
-        setResults(musicResults)
+        const musicResults: MusicType[] = data.items.map((item: any) => convertYouTubeToMusic(item))
+        const scored = musicResults
+          .map((track: MusicType) => ({
+            track,
+            score: scoreTrackAgainstIntent(track, intent, tasteProfile.topArtists),
+          }))
+          .sort((a, b) => b.score - a.score)
+          .map((entry) => entry.track)
+        setResults(scored)
       }
     } catch (error) {
       console.error('Search error:', error)
@@ -149,6 +209,7 @@ export default function SearchPage() {
                 </select>
               </div>
             </div>
+            {intentNote && <p className="text-xs text-gray-400 mt-3">Focus: {intentNote}</p>}
 
             {showAds && <AdBanner onUpgradeClick={() => router.push('/subscriptions')} />}
             {showAds && <GoogleAd className="mb-6" />}

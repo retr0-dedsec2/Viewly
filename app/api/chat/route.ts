@@ -2,14 +2,73 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/auth-tokens'
 import { normalizeTasteQuery } from '@/lib/taste-queries'
+import { buildTasteProfile } from '@/lib/taste-profile'
 
 export const dynamic = 'force-dynamic'
 
+type PlaylistSeed = {
+  name?: string
+  songs: Song[]
+  reason?: string
+}
+
+async function buildFavoriteArtistSeed(userId: string): Promise<PlaylistSeed | null> {
+  const [likedSongs, searchHistory] = await Promise.all([
+    prisma.likedSong.findMany({
+      where: { userId },
+      orderBy: { likedAt: 'desc' },
+      take: 60,
+    }),
+    prisma.searchHistory.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    }),
+  ])
+
+  const taste = buildTasteProfile(
+    likedSongs.map((song) => ({
+      title: song.trackTitle,
+      artist: song.trackArtist,
+      album: song.trackAlbum,
+      likedAt: song.likedAt,
+    })),
+    searchHistory.map((entry) => ({ query: entry.query, createdAt: entry.createdAt })),
+  )
+
+  if (!taste.topArtists.length) return null
+
+  const favoriteArtists = taste.topArtists.slice(0, 3)
+  const likedPool: Song[] = likedSongs
+    .filter((song) => favoriteArtists.some((artist) => song.trackArtist.toLowerCase().includes(artist.toLowerCase())))
+    .map((song) => ({ title: song.trackTitle, artist: song.trackArtist }))
+
+  const fallbackSuggestions: Song[] = favoriteArtists.flatMap((artist) => [
+    { title: `${artist} essentials`, artist },
+    { title: `${artist} live session`, artist },
+  ])
+
+  const searchHints: Song[] = searchHistory.slice(0, 4).map((entry) => ({
+    title: entry.query,
+    artist: favoriteArtists[0],
+  }))
+
+  const songs = dedupeSongs([...likedPool, ...searchHints, ...fallbackSuggestions]).slice(0, 15)
+
+  return {
+    name: `${favoriteArtists[0]} favorites mix`,
+    songs,
+    reason: `vos artistes preferes: ${favoriteArtists.join(', ')}`,
+  }
+}
+
 // AI Playlist Creation Function
-async function handlePlaylistCreation(message: string, userId?: string) {
+async function handlePlaylistCreation(message: string, userId?: string, seed?: PlaylistSeed) {
   const lowerMessage = message.toLowerCase()
   let genre = 'pop'
   let mood = 'upbeat'
+  let playlistSongs: Song[] = []
+  let playlistName = ''
   
   // Extract genre from message
   if (lowerMessage.includes('rock')) genre = 'rock'
@@ -31,15 +90,19 @@ async function handlePlaylistCreation(message: string, userId?: string) {
   else if (lowerMessage.includes('workout') || lowerMessage.includes('gym') || lowerMessage.includes('exercise')) mood = 'workout'
   else if (lowerMessage.includes('party') || lowerMessage.includes('dance')) mood = 'party'
   
-  // Generate playlist based on genre and mood
-  const playlistSongs = generatePlaylistSongs(genre, mood)
-  const playlistName = `${mood.charAt(0).toUpperCase() + mood.slice(1)} ${genre.charAt(0).toUpperCase() + genre.slice(1)}`
+  // Generate playlist based on genre and mood or favorite artists seed
+  playlistSongs = seed?.songs?.length ? dedupeSongs(seed.songs) : generatePlaylistSongs(genre, mood)
+  playlistName =
+    seed?.name ||
+    `${mood.charAt(0).toUpperCase() + mood.slice(1)} ${genre.charAt(0).toUpperCase() + genre.slice(1)}`
+  const reasonLine = seed?.reason ? `Based on ${seed.reason}.\n\n` : ''
+  const firstTitle = playlistSongs[0]?.title || 'a track you like'
   
   // If user is not authenticated, return suggestion only
   if (!userId) {
     return `🎵 **${playlistName} Playlist Suggestions**
 
-Here are ${playlistSongs.length} amazing songs I've curated for you:
+${reasonLine}Here are ${playlistSongs.length} amazing songs I've curated for you:
 
 ${playlistSongs.map((song, index) => 
   `**${index + 1}.** ${song.title} - *${song.artist}*`
@@ -54,7 +117,7 @@ ${playlistSongs.map((song, index) =>
 • Use the search bar to find any of these tracks
 • Ask me to search for specific songs: "search for [song name]"
 
-🎧 **Pro tip:** Say "search for ${playlistSongs[0].title}" to start listening right now!`
+🎧 **Pro tip:** Say "search for ${firstTitle}" to start listening right now!`
   }
   
   // If user is authenticated, create actual playlist in database
@@ -136,7 +199,7 @@ ${playlistSongs.map((song, index) =>
 
 ✅ **Successfully added to your playlists!** You can find it in your **Library** page.
 
-Here are the ${playlistSongs.length} amazing songs I've curated for you:
+${reasonLine}Here are the ${playlistSongs.length} amazing songs I've curated for you:
 
 ${playlistSongs.map((song, index) => 
   `**${index + 1}.** ${song.title} - *${song.artist}*`
@@ -148,7 +211,7 @@ ${playlistSongs.map((song, index) =>
 • 🎧 **Click on any song** in the playlist to start listening
 • 💾 **Your playlist is permanently saved** to your account!
 
-🚀 **Pro tip:** Search for "${playlistSongs[0].title}" to start listening right now!`
+🚀 **Pro tip:** Search for "${firstTitle}" to start listening right now!`
   } catch (error) {
     console.error('Error creating playlist:', error)
     // Return error message instead of success message
@@ -158,7 +221,7 @@ I encountered an error while trying to save your **${playlistName}** playlist to
 
 Here are the songs I had prepared for you:
 
-${playlistSongs.map((song, index) => 
+${reasonLine}${playlistSongs.map((song, index) => 
   `**${index + 1}.** ${song.title} - *${song.artist}*`
 ).join('\n')}
 
@@ -171,7 +234,7 @@ ${playlistSongs.map((song, index) =>
 • Search for any of these tracks manually
 • Ask me to search for specific songs: "search for [song name]"
 
-💡 **Pro tip:** Say "search for ${playlistSongs[0].title}" to start listening!`
+💡 **Pro tip:** Say "search for ${firstTitle}" to start listening!`
   }
 }
 
@@ -431,15 +494,27 @@ export async function POST(request: NextRequest) {
       messageLower.includes('make')
     ) {
       console.log(`Playlist creation request. UserId: ${userId ? 'Found' : 'Not found'}`)
-      const playlistResponse = await handlePlaylistCreation(message, userId || undefined)
+      const wantsFavorites =
+        messageLower.includes('favorite') ||
+        messageLower.includes('favourite') ||
+        messageLower.includes('prefere') ||
+        messageLower.includes('préfér')
+      const favoriteSeed = wantsFavorites && userId ? await buildFavoriteArtistSeed(userId) : null
+
+      const playlistResponse = await handlePlaylistCreation(
+        message,
+        userId || undefined,
+        favoriteSeed || undefined,
+      )
       return NextResponse.json({
         response: playlistResponse,
         action: 'playlist',
         requiresAuth: !userId,
         debug: {
           userId: userId ? 'authenticated' : 'not authenticated',
-          authHeader: request.headers.get('Authorization') ? 'present' : 'missing'
-        }
+          authHeader: request.headers.get('Authorization') ? 'present' : 'missing',
+          usedFavoriteSeed: Boolean(favoriteSeed),
+        },
       })
     }
 

@@ -20,6 +20,14 @@ enum SubscriptionPlan {
   PREMIUM
 }
 
+enum PaymentStatus {
+  CREATED
+  APPROVED
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -39,6 +47,7 @@ model User {
   playlists  Playlist[]
   likedSongs LikedSong[]
   searchHistory SearchHistory[]
+  payments   Payment[]
 
   @@map("users")
 }
@@ -102,5 +111,23 @@ model SearchHistory {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("search_history")
+}
+
+model Payment {
+  id        String         @id @default(cuid())
+  userId    String
+  plan      SubscriptionPlan
+  orderId   String         @unique
+  status    PaymentStatus  @default(CREATED)
+  amount    Float
+  currency  String         @default("EUR")
+  raw       Json?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("payments")
 }
 

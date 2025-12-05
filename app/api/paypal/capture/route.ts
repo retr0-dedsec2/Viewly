@@ -4,6 +4,7 @@ import { verifyToken, generateToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getPayPalClient, getCredentialStatus } from '@/lib/paypal'
 import { getAuthToken, setAuthCookie } from '@/lib/auth-tokens'
+import { PaymentStatus, SubscriptionPlan } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,6 +27,10 @@ export async function POST(req: NextRequest) {
     const capture = await client.execute(request)
 
     if (capture.result.status !== 'COMPLETED') {
+      await prisma.payment.updateMany({
+        where: { orderId: orderToken },
+        data: { status: PaymentStatus.FAILED, raw: capture.result },
+      })
       return NextResponse.json({ error: 'Payment not completed' }, { status: 400 })
     }
 
@@ -37,6 +42,28 @@ export async function POST(req: NextRequest) {
         subscriptionPlan: 'PREMIUM',
         subscriptionExpiresAt,
         hasAds: false,
+      },
+    })
+
+    await prisma.payment.updateMany({
+      where: { orderId: orderToken },
+      data: {
+        status: PaymentStatus.COMPLETED,
+        raw: capture.result,
+        plan: SubscriptionPlan.PREMIUM,
+        amount:
+          capture.result.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value ??
+          capture.result.purchase_units?.[0]?.amount?.value
+            ? Number(
+                capture.result.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value ||
+                  capture.result.purchase_units?.[0]?.amount?.value,
+              )
+            : 7,
+        currency:
+          capture.result.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.currency_code ||
+          capture.result.purchase_units?.[0]?.amount?.currency_code ||
+          'EUR',
+        userId: updatedUser.id,
       },
     })
 
@@ -66,6 +93,13 @@ export async function POST(req: NextRequest) {
     setAuthCookie(response, refreshedToken)
     return response
   } catch (error: any) {
+    const orderToken = req.nextUrl.searchParams.get('token') || req.nextUrl.searchParams.get('orderId')
+    if (orderToken) {
+      await prisma.payment.updateMany({
+        where: { orderId: orderToken },
+        data: { status: PaymentStatus.FAILED, raw: error?.result || error?.message || error },
+      })
+    }
     const message = error?.message || 'Unknown PayPal error'
     const issue = error?.result?.details?.[0]?.issue
     const description = error?.result?.details?.[0]?.description
