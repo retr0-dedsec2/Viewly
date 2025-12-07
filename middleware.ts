@@ -30,34 +30,46 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '0')
 
   const existingToken = request.cookies.get(CSRF_COOKIE_NAME)?.value
-  if (!existingToken) {
-    response.cookies.set({
-      name: CSRF_COOKIE_NAME,
-      value: createCsrfToken(),
-      httpOnly: false,
-      secure: true,
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30,
-    })
-  }
+  const csrfToken = existingToken || createCsrfToken()
+
+  // Always ensure the CSRF cookie is set so the client can read it for protected calls.
+  response.cookies.set({
+    name: CSRF_COOKIE_NAME,
+    value: csrfToken,
+    httpOnly: false,
+    secure: true,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  })
 
   const isProtectedApiCall =
     PROTECTED_METHODS.has(request.method) &&
     request.nextUrl.pathname.startsWith('/api')
 
   if (isProtectedApiCall) {
-    const cookieToken = existingToken || response.cookies.get(CSRF_COOKIE_NAME)?.value
+    const cookieToken = csrfToken
     const headerToken = request.headers.get(CSRF_HEADER_NAME)
 
     if (!cookieToken || !headerToken || headerToken !== cookieToken) {
-      return NextResponse.json(
+      const denied = NextResponse.json(
         { error: 'Invalid CSRF token' },
         {
           status: 403,
           headers: { 'content-type': 'application/json' },
         }
       )
+      // Propagate the CSRF cookie so the next request can succeed
+      denied.cookies.set({
+        name: CSRF_COOKIE_NAME,
+        value: csrfToken,
+        httpOnly: false,
+        secure: true,
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      })
+      return denied
     }
   }
 
