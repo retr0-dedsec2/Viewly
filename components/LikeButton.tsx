@@ -40,7 +40,13 @@ export default function LikeButton({ track, size = 20, className = '' }: LikeBut
   }, [track.id, user])
 
   const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault()
     e.stopPropagation()
+    // Extra guard to avoid bubbling to parent click handlers
+    if (e.nativeEvent && 'stopImmediatePropagation' in e.nativeEvent) {
+      // @ts-ignore
+      e.nativeEvent.stopImmediatePropagation()
+    }
     if (!user) return
 
     // Optimistic toggle; revert on failure
@@ -59,7 +65,6 @@ export default function LikeButton({ track, size = 20, className = '' }: LikeBut
     <button
       type="button"
       onClick={handleClick}
-      onClickCapture={(e) => e.stopPropagation()}
       className={`hover:scale-110 transition-transform ${className}`}
       aria-label={liked ? 'Remove from liked songs' : 'Add to liked songs'}
     >
