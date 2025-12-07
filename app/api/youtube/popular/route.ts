@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const POPULAR_CACHE_TTL_MS = 1000 * 60 * 10 // 10 minutes
+let popularCache:
+  | {
+      data: any
+      expires: number
+    }
+  | null = null
+
 export async function GET(request: NextRequest) {
   try {
+    if (popularCache && popularCache.expires > Date.now()) {
+      return NextResponse.json(popularCache.data)
+    }
+
     const apiKey = process.env.YOUTUBE_API_KEY
 
     if (!apiKey) {
@@ -52,6 +64,10 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
+    popularCache = {
+      data,
+      expires: Date.now() + POPULAR_CACHE_TTL_MS,
+    }
     return NextResponse.json(data)
   } catch (error) {
     console.error('YouTube popular error:', error)

@@ -2,7 +2,7 @@
 
 import { Heart } from 'lucide-react'
 import { Music } from '@/types/music'
-import { isLiked, toggleLikedSong } from '@/lib/liked-songs'
+import { isLiked, toggleLikedSong, LIKED_SONGS_EVENT } from '@/lib/liked-songs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useState, useEffect } from 'react'
 
@@ -17,28 +17,25 @@ export default function LikeButton({ track, size = 20, className = '' }: LikeBut
   const [liked, setLiked] = useState(false)
 
   useEffect(() => {
-    if (user) {
+    if (!user) return
+
+    const syncState = (event?: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }> | undefined)?.detail
+      if (detail?.userId && detail.userId !== user.id) return
       setLiked(isLiked(track.id, user.id))
     }
-    
-    // Listen for storage changes to update like status
-    const handleStorageChange = () => {
-      if (user) {
-        setLiked(isLiked(track.id, user.id))
-      }
-    }
-    
+
+    // Initial hydrate
+    syncState()
+
+    const handleStorageChange = () => syncState()
+
     window.addEventListener('storage', handleStorageChange)
-    // Also check periodically for changes (since storage event doesn't fire in same tab)
-    const interval = setInterval(() => {
-      if (user) {
-        setLiked(isLiked(track.id, user.id))
-      }
-    }, 500)
-    
+    window.addEventListener(LIKED_SONGS_EVENT, syncState as EventListener)
+
     return () => {
       window.removeEventListener('storage', handleStorageChange)
-      clearInterval(interval)
+      window.removeEventListener(LIKED_SONGS_EVENT, syncState as EventListener)
     }
   }, [track.id, user])
 

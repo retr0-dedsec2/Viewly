@@ -7,6 +7,31 @@ import { normalizeTasteQuery } from '@/lib/taste-queries'
 
 export const dynamic = 'force-dynamic'
 
+const CACHE_TTL_MS = 1000 * 60 * 5 // 5 minutes
+const CACHE_MAX_ENTRIES = 50
+const searchCache = new Map<
+  string,
+  { data: any; expires: number }
+>()
+
+function getCache(key: string) {
+  const cached = searchCache.get(key)
+  if (cached && cached.expires > Date.now()) return cached.data
+  if (cached) searchCache.delete(key)
+  return null
+}
+
+function setCache(key: string, data: any) {
+  searchCache.set(key, { data, expires: Date.now() + CACHE_TTL_MS })
+
+  if (searchCache.size > CACHE_MAX_ENTRIES) {
+    const entries = Array.from(searchCache.entries()).sort((a, b) => a[1].expires - b[1].expires)
+    for (const [entryKey] of entries.slice(0, searchCache.size - CACHE_MAX_ENTRIES)) {
+      searchCache.delete(entryKey)
+    }
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -22,6 +47,8 @@ export async function GET(request: NextRequest) {
       )
     }
     const query = sanitized
+
+    const safeMaxResults = Math.min(Math.max(parseInt(maxResults, 10) || 10, 1), 25)
 
     // Log search to user history when authenticated
     try {
@@ -72,12 +99,18 @@ export async function GET(request: NextRequest) {
     const allowedOrders = new Set(['relevance', 'date', 'rating', 'viewCount'])
     const safeOrder = allowedOrders.has(order) ? order : 'relevance'
 
+    const cacheKey = `${query}::${safeMaxResults}::${safeOrder}`
+    const cached = getCache(cacheKey)
+    if (cached) {
+      return NextResponse.json(cached)
+    }
+
     // Build YouTube API URL with order parameter
     const orderParam = safeOrder === 'relevance' ? '' : `&order=${safeOrder}`
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&q=${encodeURIComponent(
         query
-      )}&maxResults=${maxResults}${orderParam}&key=${apiKey}`
+      )}&maxResults=${safeMaxResults}${orderParam}&key=${apiKey}`
     )
 
     if (!response.ok) {
@@ -108,6 +141,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    setCache(cacheKey, data)
     return NextResponse.json(data)
   } catch (error) {
     console.error('YouTube search error:', error)

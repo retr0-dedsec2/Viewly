@@ -11,7 +11,7 @@ import { convertYouTubeToMusic } from '@/lib/youtube'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { sanitizeSearchQuery } from '@/lib/sanitize'
-import { getLikedSongs } from '@/lib/liked-songs'
+import { getLikedSongs, LIKED_SONGS_EVENT } from '@/lib/liked-songs'
 import { getSearchHistory, recordSearchQuery } from '@/lib/search-history'
 import { buildTasteProfile, TasteProfile } from '@/lib/taste-profile'
 import { usePlayer } from '@/contexts/PlayerContext'
@@ -141,15 +141,17 @@ export default function Home() {
   useEffect(() => {
     if (!user) return
 
-    const handleStorageChange = () => refreshTasteProfile()
-    const interval = setInterval(handleStorageChange, 1500)
-
-    window.addEventListener('storage', handleStorageChange)
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      clearInterval(interval)
+    const handleTasteRefresh = () => {
+      refreshTasteProfile()
     }
-  }, [user])
+
+    window.addEventListener('storage', handleTasteRefresh)
+    window.addEventListener(LIKED_SONGS_EVENT, handleTasteRefresh as EventListener)
+    return () => {
+      window.removeEventListener('storage', handleTasteRefresh)
+      window.removeEventListener(LIKED_SONGS_EVENT, handleTasteRefresh as EventListener)
+    }
+  }, [user, refreshTasteProfile])
 
   const handlePlay = (track: Music) => {
     const index = playlist.findIndex((t) => t.id === track.id)

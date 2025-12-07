@@ -5,9 +5,19 @@ import { getToken } from './auth-client'
 import { withCsrfHeader } from './csrf'
 
 const LIKED_SONGS_KEY = 'liked_songs'
+export const LIKED_SONGS_EVENT = 'liked-songs-updated'
 
 function storageKey(userId: string) {
   return `${LIKED_SONGS_KEY}_${userId}`
+}
+
+function emitLikedSongsUpdate(userId?: string) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(
+    new CustomEvent(LIKED_SONGS_EVENT, {
+      detail: { userId },
+    })
+  )
 }
 
 function readLocal(userId?: string): Music[] {
@@ -25,6 +35,7 @@ function readLocal(userId?: string): Music[] {
 function writeLocal(songs: Music[], userId?: string) {
   if (typeof window === 'undefined' || !userId) return
   localStorage.setItem(storageKey(userId), JSON.stringify(songs))
+  emitLikedSongsUpdate(userId)
 }
 
 async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
