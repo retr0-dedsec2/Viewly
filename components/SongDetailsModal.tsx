@@ -1,8 +1,8 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { Music } from '@/types/music'
 import { Clock, ExternalLink, Facebook, Twitter, X as CloseIcon } from 'lucide-react'
-import { useMemo } from 'react'
 
 type SongDetailsModalProps = {
   track: Music | null
@@ -37,6 +37,8 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
     () => (track ? `https://open.spotify.com/search/${encodeURIComponent(`${track.title} ${track.artist}`)}` : ''),
     [track]
   )
+  const [lyrics, setLyrics] = useState<string | null>(null)
+  const [lyricsState, setLyricsState] = useState<'idle' | 'loading' | 'loaded' | 'error' | 'not_found'>('idle')
 
   if (!track) return null
 
@@ -67,6 +69,43 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
       shareTo('twitter')
     }
   }
+
+  useEffect(() => {
+    let active = true
+    if (!track?.artist || !track?.title) return
+
+    const fetchLyrics = async () => {
+      try {
+        setLyricsState('loading')
+        const params = new URLSearchParams({
+          artist: track.artist,
+          title: track.title,
+        })
+        const res = await fetch(`/api/lyrics?${params.toString()}`)
+        if (!res.ok) {
+          setLyricsState(res.status === 404 ? 'not_found' : 'error')
+          return
+        }
+        const data = await res.json()
+        if (!active) return
+        if (data?.lyrics) {
+          setLyrics(data.lyrics as string)
+          setLyricsState('loaded')
+        } else {
+          setLyrics(null)
+          setLyricsState('not_found')
+        }
+      } catch {
+        if (!active) return
+        setLyricsState('error')
+      }
+    }
+
+    fetchLyrics()
+    return () => {
+      active = false
+    }
+  }, [track?.artist, track?.title])
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -153,6 +192,20 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
                   Open in Spotify
                   <ExternalLink size={16} />
                 </a>
+              </div>
+              <div className="bg-black/25 border border-gray-800 rounded-xl p-3 max-h-56 overflow-y-auto">
+                {lyricsState === 'loading' && (
+                  <p className="text-sm text-gray-400">Fetching lyrics…</p>
+                )}
+                {lyricsState === 'loaded' && lyrics && (
+                  <pre className="whitespace-pre-wrap text-sm text-white leading-relaxed">{lyrics}</pre>
+                )}
+                {lyricsState === 'not_found' && (
+                  <p className="text-sm text-gray-400">No lyrics found yet. Try the lookup button above.</p>
+                )}
+                {lyricsState === 'error' && (
+                  <p className="text-sm text-gray-400">Could not load lyrics right now.</p>
+                )}
               </div>
             </div>
 
