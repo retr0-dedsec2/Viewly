@@ -9,12 +9,12 @@ export function middleware(request: NextRequest) {
 
   const csp = [
     "default-src 'self'",
-    "img-src 'self' data: https://i.ytimg.com https://*.googleapis.com https://*.ggpht.com",
-    "media-src 'self' blob:",
-    "script-src 'self' 'unsafe-inline' https://www.paypal.com https://www.paypalobjects.com",
-    "connect-src 'self' https://www.googleapis.com https://*.googleapis.com https://api.sandbox.paypal.com https://api-m.paypal.com",
-    "frame-src https://www.paypal.com https://www.sandbox.paypal.com",
-    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https://i.ytimg.com https://*.googleapis.com https://*.ggpht.com https://*.gstatic.com https://pagead2.googlesyndication.com",
+    "media-src 'self' blob: https://www.youtube.com",
+    "script-src 'self' 'unsafe-inline' https://www.paypal.com https://www.paypalobjects.com https://www.youtube.com https://www.youtube-nocookie.com https://pagead2.googlesyndication.com https://vercel.live",
+    "connect-src 'self' https://www.googleapis.com https://*.googleapis.com https://api.sandbox.paypal.com https://api-m.paypal.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://vercel.live",
+    "frame-src https://www.paypal.com https://www.sandbox.paypal.com https://www.youtube.com https://www.youtube-nocookie.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
