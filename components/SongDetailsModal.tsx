@@ -42,7 +42,11 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
 
   if (!track) return null
 
-  const shareUrl = videoUrl || window.location.href
+  const shareUrl = useMemo(() => {
+    if (videoUrl) return videoUrl
+    if (typeof window !== 'undefined') return window.location.href
+    return ''
+  }, [videoUrl])
   const shareText = `${track.title} · ${track.artist}`
 
   const shareTo = (platform: 'twitter' | 'facebook' | 'spotify') => {
