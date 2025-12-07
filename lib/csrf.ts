@@ -36,7 +36,14 @@ export function getCsrfTokenFromCookie() {
 }
 
 export function withCsrfHeader(headers: HeadersInit = {}) {
-  const token = getCsrfTokenFromCookie()
+  let token = getCsrfTokenFromCookie()
+
+  // If the token is missing on the client, generate and set one so the next call succeeds.
+  if (!token && typeof document !== 'undefined') {
+    token = createCsrfToken()
+    document.cookie = `${CSRF_COOKIE_NAME}=${token}; path=/; SameSite=Strict${location.protocol === 'https:' ? '; Secure' : ''}`
+  }
+
   if (!token) return headers
 
   if (headers instanceof Headers) {
