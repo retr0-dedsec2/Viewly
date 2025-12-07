@@ -2,14 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Library, Heart, Plus, User, LogOut, Crown, Shield } from 'lucide-react'
+import { Home, Search, Library, Heart, Plus, User, LogOut, Crown, Shield, Sun, Moon } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export default function Sidebar() {
   const pathname = usePathname()
   const { user, logout, isAuthenticated } = useAuth()
   const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
 
   const handleLogout = () => {
     logout()
@@ -157,6 +159,15 @@ export default function Sidebar() {
             <span className="font-medium">Sign In</span>
           </Link>
         )}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-spotify-light rounded-lg transition-colors w-full mt-3"
+        >
+          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          <span className="font-medium">
+            {theme === 'light' ? 'Dark mode' : 'Light mode'}
+          </span>
+        </button>
         <div className="text-xs text-gray-400 mt-4">
           <p>Viewly</p>
           <p className="mt-1">v1.0.0</p>

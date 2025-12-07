@@ -1,13 +1,15 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Music } from '@/types/music'
-import { Play } from 'lucide-react'
+import { Info, Play } from 'lucide-react'
 import SearchBar from './SearchBar'
 import LikeButton from './LikeButton'
 import AdBanner from './AdBanner'
 import GoogleAd from './GoogleAd'
-import TasteInsights from './TasteInsights'
 import { TasteProfile } from '@/lib/taste-profile'
+import ShareButtons from './ShareButtons'
+import SongDetailsModal from './SongDetailsModal'
 
 interface MainContentProps {
   playlist: Music[]
@@ -32,8 +34,20 @@ export default function MainContent({
   onTastePrompt,
   onSearchLogged,
 }: MainContentProps) {
+  const [visibleCount, setVisibleCount] = useState(10)
+  const [selectedTrack, setSelectedTrack] = useState<Music | null>(null)
+
+  useEffect(() => {
+    setVisibleCount((current) => {
+      if (!playlist.length) return 0
+      const baseline = Math.min(10, playlist.length)
+      return current > playlist.length ? baseline : Math.max(current, baseline)
+    })
+  }, [playlist])
+
   return (
-    <div className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-28 sm:pb-12 lg:pb-14">
+    <>
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-28 sm:pb-12 lg:pb-14">
       <div className="mb-6 lg:mb-8">
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">Good evening</h2>
         <p className="text-gray-400 text-sm sm:text-base">Discover music with your AI assistant</p>
@@ -106,7 +120,7 @@ export default function MainContent({
       <div>
         <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-4">Recently Played</h3>
         <div className="space-y-1 sm:space-y-2">
-          {playlist.map((track, index) => (
+          {playlist.slice(0, visibleCount).map((track, index) => (
             <div
               key={track.id}
               className={`flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg hover:bg-spotify-light active:scale-[0.98] cursor-pointer transition-all ${
@@ -142,14 +156,36 @@ export default function MainContent({
                 {Math.floor(track.duration / 60)}:
                 {(track.duration % 60).toString().padStart(2, '0')}
               </div>
-              <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="flex-shrink-0 flex items-center gap-2 sm:gap-3"
+              >
+                <ShareButtons track={track} dense />
+                <button
+                  onClick={() => setSelectedTrack(track)}
+                  className="p-2 rounded-full bg-black/20 hover:bg-black/40 border border-gray-800 text-white transition-colors"
+                  aria-label={`More about ${track.title}`}
+                >
+                  <Info size={16} />
+                </button>
                 <LikeButton track={track} size={16} />
               </div>
             </div>
           ))}
+          {playlist.length > visibleCount && (
+            <div className="pt-2">
+              <button
+                onClick={() => setVisibleCount((count) => Math.min(count + 8, playlist.length))}
+                className="w-full py-2.5 text-center bg-spotify-light hover:bg-spotify-gray text-white rounded-lg transition-colors font-medium"
+              >
+                Load more
+              </button>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+      <SongDetailsModal track={selectedTrack} onClose={() => setSelectedTrack(null)} />
+    </>
   )
 }
 

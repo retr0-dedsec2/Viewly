@@ -33,6 +33,68 @@ body {
   min-height: 100vh;
 }
 
+body.theme-dark {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--background-start-rgb)),
+    rgb(var(--background-end-rgb))
+  );
+  color: rgb(var(--foreground-rgb));
+}
+
+body.theme-light {
+  --foreground-rgb: 15, 23, 42;
+  --background-start-rgb: 249, 250, 251;
+  --background-end-rgb: 226, 232, 240;
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--background-start-rgb)),
+    rgb(var(--background-end-rgb))
+  );
+  color: #0f172a;
+}
+
+.app-shell {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--background-start-rgb)),
+    rgb(var(--background-end-rgb))
+  );
+  color: rgb(var(--foreground-rgb));
+}
+
+body.theme-light .app-shell {
+  background: linear-gradient(to bottom, #f8fafc, #e5e7eb, #dce3ed);
+  color: #0f172a;
+}
+
+body.theme-light .bg-spotify-dark,
+body.theme-light .bg-spotify-gray,
+body.theme-light .bg-spotify-light {
+  background-color: #e5e7eb !important;
+  color: #0f172a;
+}
+
+body.theme-light .bg-gradient-to-b {
+  background-image: linear-gradient(to bottom, #f8fafc, #e5e7eb, #dce3ed) !important;
+}
+
+body.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+body.theme-light .text-gray-400 {
+  color: #475569 !important;
+}
+
+body.theme-light .text-gray-300 {
+  color: #334155 !important;
+}
+
+body.theme-light .hover\:bg-spotify-light:hover {
+  background-color: #dce3ed !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 12px;
