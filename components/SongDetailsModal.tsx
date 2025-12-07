@@ -73,46 +73,9 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
   }
 
   useEffect(() => {
-    let active = true
-    if (!track?.artist || !track?.title) return
-
-    const fetchLyrics = async () => {
-      try {
-        setLyricsState('loading')
-        const params = new URLSearchParams({
-          artist: track.artist,
-          title: track.title,
-        })
-        const res = await fetch(`/api/lyrics?${params.toString()}`)
-        if (!res.ok) {
-          setLyricsState(res.status === 404 ? 'not_found' : 'error')
-          return
-        }
-        let data: any = null
-        try {
-          data = await res.json()
-        } catch {
-          setLyricsState('error')
-          return
-        }
-        if (!active) return
-        if (data?.lyrics) {
-          setLyrics(data.lyrics as string)
-          setLyricsState('loaded')
-        } else {
-          setLyrics(null)
-          setLyricsState('not_found')
-        }
-      } catch {
-        if (!active) return
-        setLyricsState('error')
-      }
-    }
-
-    fetchLyrics()
-    return () => {
-      active = false
-    }
+    // Fetch lyrics was causing instability in production; show lookup links instead.
+    setLyrics(null)
+    setLyricsState('not_found')
   }, [track?.artist, track?.title])
 
   useEffect(() => {
@@ -207,7 +170,9 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
                     <pre className="whitespace-pre-wrap text-sm text-white leading-relaxed">{lyrics}</pre>
                   )}
                   {lyricsState === 'not_found' && (
-                    <p className="text-sm text-gray-400">No lyrics found yet. Try the lookup button above.</p>
+                    <p className="text-sm text-gray-400">
+                      Lyrics unavailable here. Try the lookup button above.
+                    </p>
                   )}
                   {lyricsState === 'error' && (
                     <p className="text-sm text-gray-400">Could not load lyrics right now.</p>
