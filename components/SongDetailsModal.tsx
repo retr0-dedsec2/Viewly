@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Music } from '@/types/music'
 import { Clock, ExternalLink, Facebook, Twitter, X as CloseIcon } from 'lucide-react'
+import ModalErrorBoundary from './ModalErrorBoundary'
 
 type SongDetailsModalProps = {
   track: Music | null
@@ -127,141 +128,129 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-spotify-light w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden relative">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-white p-2 rounded-full hover:bg-black/30 transition-colors"
-          aria-label="Close details"
-        >
-          <CloseIcon size={20} />
-        </button>
+      <ModalErrorBoundary>
+        <div className="bg-spotify-light w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden relative">
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 text-gray-400 hover:text-white p-2 rounded-full hover:bg-black/30 transition-colors"
+            aria-label="Close details"
+          >
+            <CloseIcon size={20} />
+          </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-[260px,1fr]">
-          <div className="p-4 sm:p-6">
-            <div className="rounded-xl overflow-hidden shadow-lg">
-              <img src={track.cover} alt={track.title} className="w-full h-full object-cover" />
-            </div>
-          </div>
-
-          <div className="p-5 sm:p-7 space-y-4 sm:space-y-6">
-            <div>
-              <p className="text-xs uppercase text-gray-400 tracking-widest mb-1">Now exploring</p>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white leading-tight">{track.title}</h3>
-              <p className="text-gray-300 text-sm sm:text-base mt-1">{track.artist}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="bg-black/20 rounded-lg p-3 border border-gray-800">
-                <p className="text-gray-400 text-xs">Album</p>
-                <p className="text-white font-semibold truncate">{track.album || 'Unknown'}</p>
-              </div>
-              <div className="bg-black/20 rounded-lg p-3 border border-gray-800">
-                <p className="text-gray-400 text-xs">Duration</p>
-                <div className="flex items-center gap-2 text-white font-semibold">
-                  <Clock size={16} />
-                  <span>{formatDuration(track.duration)}</span>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-[260px,1fr]">
+            <div className="p-4 sm:p-6">
+              <div className="rounded-xl overflow-hidden shadow-lg">
+                <img src={track.cover} alt={track.title} className="w-full h-full object-cover" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm text-gray-400">Credits</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="p-5 sm:p-7 space-y-4 sm:space-y-6">
+              <div>
+                <p className="text-xs uppercase text-gray-400 tracking-widest mb-1">Now exploring</p>
+                <h3 className="text-2xl sm:text-3xl font-bold text-white leading-tight">{track.title}</h3>
+                <p className="text-gray-300 text-sm sm:text-base mt-1">{track.artist}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-black/20 rounded-lg p-3 border border-gray-800">
-                  <p className="text-gray-400 text-xs">Artist</p>
-                  <p className="text-white font-semibold">{track.artist}</p>
+                  <p className="text-gray-400 text-xs">Album</p>
+                  <p className="text-white font-semibold truncate">{track.album || 'Unknown'}</p>
                 </div>
                 <div className="bg-black/20 rounded-lg p-3 border border-gray-800">
-                  <p className="text-gray-400 text-xs">Source</p>
-                  <p className="text-white font-semibold">YouTube</p>
+                  <p className="text-gray-400 text-xs">Duration</p>
+                  <div className="flex items-center gap-2 text-white font-semibold">
+                    <Clock size={16} />
+                    <span>{formatDuration(track.duration)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <p className="text-sm text-gray-400">Lyrics & artist info</p>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href={lyricSearchUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-2 rounded-full bg-spotify-green text-black font-semibold flex items-center gap-2 hover:bg-green-500 transition-colors"
-                >
-                  Lyrics lookup
-                  <ExternalLink size={16} />
-                </a>
-                {videoUrl && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-400">Lyrics & artist info</p>
+                <div className="flex flex-wrap gap-2">
                   <a
-                    href={videoUrl}
+                    href={lyricSearchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-2 rounded-full bg-spotify-green text-black font-semibold flex items-center gap-2 hover:bg-green-500 transition-colors"
+                  >
+                    Lyrics lookup
+                    <ExternalLink size={16} />
+                  </a>
+                  {videoUrl && (
+                    <a
+                      href={videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-2 rounded-full bg-black/30 border border-gray-800 text-white flex items-center gap-2 hover:bg-black/50 transition-colors"
+                    >
+                      Open video
+                      <ExternalLink size={16} />
+                    </a>
+                  )}
+                  <a
+                    href={spotifySearchUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="px-3 py-2 rounded-full bg-black/30 border border-gray-800 text-white flex items-center gap-2 hover:bg-black/50 transition-colors"
                   >
-                    Open video
+                    Open in Spotify
                     <ExternalLink size={16} />
                   </a>
-                )}
-                <a
-                  href={spotifySearchUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-2 rounded-full bg-black/30 border border-gray-800 text-white flex items-center gap-2 hover:bg-black/50 transition-colors"
-                >
-                  Open in Spotify
-                  <ExternalLink size={16} />
-                </a>
+                </div>
+                <div className="bg-black/25 border border-gray-800 rounded-xl p-3 max-h-56 overflow-y-auto">
+                  {lyricsState === 'loading' && (
+                    <p className="text-sm text-gray-400">Fetching lyrics…</p>
+                  )}
+                  {lyricsState === 'loaded' && lyrics && (
+                    <pre className="whitespace-pre-wrap text-sm text-white leading-relaxed">{lyrics}</pre>
+                  )}
+                  {lyricsState === 'not_found' && (
+                    <p className="text-sm text-gray-400">No lyrics found yet. Try the lookup button above.</p>
+                  )}
+                  {lyricsState === 'error' && (
+                    <p className="text-sm text-gray-400">Could not load lyrics right now.</p>
+                  )}
+                </div>
               </div>
-              <div className="bg-black/25 border border-gray-800 rounded-xl p-3 max-h-56 overflow-y-auto">
-                {lyricsState === 'loading' && (
-                  <p className="text-sm text-gray-400">Fetching lyrics…</p>
-                )}
-                {lyricsState === 'loaded' && lyrics && (
-                  <pre className="whitespace-pre-wrap text-sm text-white leading-relaxed">{lyrics}</pre>
-                )}
-                {lyricsState === 'not_found' && (
-                  <p className="text-sm text-gray-400">No lyrics found yet. Try the lookup button above.</p>
-                )}
-                {lyricsState === 'error' && (
-                  <p className="text-sm text-gray-400">Could not load lyrics right now.</p>
-                )}
-              </div>
-            </div>
 
-            <div>
-              <p className="text-sm text-gray-400 mb-2">Share</p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={() => shareTo('twitter')}
-                  className="p-2 rounded-full bg-black/30 hover:bg-black/50 border border-gray-800 text-white transition-colors"
-                  aria-label="Share on Twitter"
-                >
-                  <Twitter size={18} />
-                </button>
-                <button
-                  onClick={() => shareTo('facebook')}
-                  className="p-2 rounded-full bg-black/30 hover:bg-black/50 border border-gray-800 text-white transition-colors"
-                  aria-label="Share on Facebook"
-                >
-                  <Facebook size={18} />
-                </button>
-                <button
-                  onClick={() => shareTo('spotify')}
-                  className="p-2 rounded-full bg-black/30 hover:bg-black/50 border border-gray-800 text-white transition-colors"
-                  aria-label="Open on Spotify"
-                >
-                  <SpotifyIcon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleNativeShare}
-                  className="px-3 py-2 rounded-full bg-spotify-green text-black font-semibold hover:bg-green-500 transition-colors"
-                >
-                  Quick share
-                </button>
+              <div>
+                <p className="text-sm text-gray-400 mb-2">Share</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => shareTo('twitter')}
+                    className="p-2 rounded-full bg-black/30 hover:bg-black/50 border border-gray-800 text-white transition-colors"
+                    aria-label="Share on Twitter"
+                  >
+                    <Twitter size={18} />
+                  </button>
+                  <button
+                    onClick={() => shareTo('facebook')}
+                    className="p-2 rounded-full bg-black/30 hover:bg-black/50 border border-gray-800 text-white transition-colors"
+                    aria-label="Share on Facebook"
+                  >
+                    <Facebook size={18} />
+                  </button>
+                  <button
+                    onClick={() => shareTo('spotify')}
+                    className="p-2 rounded-full bg-black/30 hover:bg-black/50 border border-gray-800 text-white transition-colors"
+                    aria-label="Open on Spotify"
+                  >
+                    <SpotifyIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleNativeShare}
+                    className="px-3 py-2 rounded-full bg-spotify-green text-black font-semibold hover:bg-green-500 transition-colors"
+                  >
+                    Quick share
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </ModalErrorBoundary>
     </div>
   )
 }
