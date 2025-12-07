@@ -39,14 +39,10 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
   )
   const [lyrics, setLyrics] = useState<string | null>(null)
   const [lyricsState, setLyricsState] = useState<'idle' | 'loading' | 'loaded' | 'error' | 'not_found'>('idle')
+  const [shareUrl, setShareUrl] = useState<string>('')
 
   if (!track) return null
 
-  const shareUrl = useMemo(() => {
-    if (videoUrl) return videoUrl
-    if (typeof window !== 'undefined') return window.location.href
-    return ''
-  }, [videoUrl])
   const shareText = `${track.title} · ${track.artist}`
 
   const shareTo = (platform: 'twitter' | 'facebook' | 'spotify') => {
@@ -110,6 +106,17 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
       active = false
     }
   }, [track?.artist, track?.title])
+
+  useEffect(() => {
+    if (!track) return
+    if (videoUrl) {
+      setShareUrl(videoUrl)
+      return
+    }
+    if (typeof window !== 'undefined') {
+      setShareUrl(window.location.href)
+    }
+  }, [track, videoUrl])
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
