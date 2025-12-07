@@ -46,6 +46,7 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
   const shareText = `${track.title} · ${track.artist}`
 
   const shareTo = (platform: 'twitter' | 'facebook' | 'spotify') => {
+    if (!shareUrl) return
     const encodedUrl = encodeURIComponent(shareUrl)
     const encodedText = encodeURIComponent(shareText)
 
@@ -86,7 +87,13 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
           setLyricsState(res.status === 404 ? 'not_found' : 'error')
           return
         }
-        const data = await res.json()
+        let data: any = null
+        try {
+          data = await res.json()
+        } catch {
+          setLyricsState('error')
+          return
+        }
         if (!active) return
         if (data?.lyrics) {
           setLyrics(data.lyrics as string)
