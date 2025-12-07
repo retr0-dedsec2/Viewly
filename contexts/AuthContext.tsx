@@ -19,37 +19,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = getUser()
-    const token = getToken()
+    // Always verify session with server (cookies are httpOnly, survive reload)
+    const storedToken = getToken()
 
-    if (storedUser && token) {
-      // Verify token with server
-      fetch('/api/auth/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((res) => {
-          if (res.ok) {
-            return res.json()
+    fetch('/api/auth/me', {
+      credentials: 'include',
+      headers: storedToken
+        ? {
+            Authorization: `Bearer ${storedToken}`,
           }
-          throw new Error('Invalid token')
-        })
-        .then((data) => {
-          setUser(data.user)
-          setAuth(token, data.user)
-        })
-        .catch(() => {
-          clearAuth()
-          setUser(null)
-        })
-        .finally(() => {
-          setLoading(false)
-        })
-    } else {
-      setLoading(false)
-    }
+        : undefined,
+    })
+      .then((res) => {
+        if (res.ok) return res.json()
+        throw new Error('Invalid token')
+      })
+      .then((data) => {
+        setUser(data.user)
+        // Refresh local cache if we still have a token
+        if (storedToken) {
+          setAuth(storedToken, data.user)
+        }
+      })
+      .catch(() => {
+        clearAuth()
+        setUser(null)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }, [])
 
   const login = (token: string, userData: User) => {
