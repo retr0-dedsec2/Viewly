@@ -37,10 +37,15 @@ export async function sendTwoFactorCode(to: string, code: string) {
     return
   }
 
-  await transporter.sendMail({
-    from: EMAIL_FROM || 'no-reply@viewly.local',
-    to,
-    subject,
-    text,
-  })
+  try {
+    await transporter.sendMail({
+      from: EMAIL_FROM || 'no-reply@viewly.local',
+      to,
+      subject,
+      text,
+    })
+  } catch (error) {
+    console.error('[email] Failed to send 2FA code:', error)
+    throw new Error('EMAIL_SEND_FAILED')
+  }
 }

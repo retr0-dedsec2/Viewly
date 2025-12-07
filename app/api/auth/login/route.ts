@@ -43,7 +43,15 @@ export async function POST(req: NextRequest) {
       const codeHash = await bcrypt.hash(code, 10)
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
       await setTwoFactorCode(user.id, codeHash, expiresAt)
-      await sendTwoFactorCode(user.email, code)
+      try {
+        await sendTwoFactorCode(user.email, code)
+      } catch (error: any) {
+        const details = error?.code === 'EAUTH' ? 'SMTP authentication failed. Use an app password or update SMTP credentials.' : 'Unable to send verification email. Check SMTP settings.'
+        return NextResponse.json(
+          { error: details },
+          { status: 503 }
+        )
+      }
       return NextResponse.json({
         requiresTwoFactor: true,
         userId: user.id,
