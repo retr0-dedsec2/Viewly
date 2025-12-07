@@ -33,7 +33,7 @@ export default function MainContent({
   onSearchLogged,
 }: MainContentProps) {
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-28 sm:pb-12 lg:pb-14">
       <div className="mb-6 lg:mb-8">
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">Good evening</h2>
         <p className="text-gray-400 text-sm sm:text-base">Discover music with your AI assistant</p>
@@ -49,7 +49,34 @@ export default function MainContent({
       {/* Quick Access */}
       <div className="mb-8 lg:mb-12">
         <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-4">Made for You</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+        {/* Mobile: horizontal scroll for larger touch targets */}
+        <div className="sm:hidden -mx-1 px-1 flex gap-3 overflow-x-auto pb-2">
+          {playlist.slice(0, 6).map((track) => (
+            <div
+              key={track.id}
+              className="min-w-[140px] bg-spotify-light hover:bg-spotify-gray active:scale-[0.98] p-3 rounded-lg cursor-pointer flex-shrink-0 transition-all"
+              onClick={() => onPlay(track)}
+            >
+              <div className="relative mb-2">
+                <img
+                  src={track.cover}
+                  alt={track.album}
+                  className="w-full aspect-square object-cover rounded shadow-lg"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 rounded flex items-center justify-center transition-all">
+                  <button className="w-10 h-10 bg-spotify-green rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-all">
+                    <Play size={18} fill="white" />
+                  </button>
+                </div>
+              </div>
+              <h4 className="text-white font-semibold truncate text-sm">{track.album}</h4>
+              <p className="text-gray-400 text-xs truncate">{track.artist}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Tablet+ grid */}
+        <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
           {playlist.slice(0, 5).map((track) => (
             <div
               key={track.id}
