@@ -22,7 +22,7 @@ const SpotifyIcon = ({ className }: { className?: string }) => (
 
 export default function ShareButtons({ track, size = 28, dense }: ShareButtonsProps) {
   const shareUrl = track.videoId ? `https://www.youtube.com/watch?v=${track.videoId}` : window.location.href
-  const shareText = `${track.title} · ${track.artist}`
+  const shareText = `${track.title} - ${track.artist}`
   const spotifySearchUrl = `https://open.spotify.com/search/${encodeURIComponent(`${track.title} ${track.artist}`)}`
 
   const shareTo = (platform: 'twitter' | 'facebook' | 'spotify') => {

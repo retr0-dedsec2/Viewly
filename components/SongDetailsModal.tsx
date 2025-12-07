@@ -44,7 +44,7 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
 
   if (!track) return null
 
-  const shareText = `${track.title} · ${track.artist}`
+  const shareText = `${track.title} - ${track.artist}`
 
   const shareTo = (platform: 'twitter' | 'facebook' | 'spotify') => {
     if (!shareUrl) return
