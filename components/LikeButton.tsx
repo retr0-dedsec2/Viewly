@@ -57,7 +57,9 @@ export default function LikeButton({ track, size = 20, className = '' }: LikeBut
 
   return (
     <button
+      type="button"
       onClick={handleClick}
+      onClickCapture={(e) => e.stopPropagation()}
       className={`hover:scale-110 transition-transform ${className}`}
       aria-label={liked ? 'Remove from liked songs' : 'Add to liked songs'}
     >
