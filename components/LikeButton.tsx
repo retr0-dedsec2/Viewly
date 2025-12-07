@@ -43,8 +43,14 @@ export default function LikeButton({ track, size = 20, className = '' }: LikeBut
     e.stopPropagation()
     if (!user) return
 
-    await toggleLikedSong(track, user.id)
+    // Optimistic toggle; revert on failure
     setLiked((prev) => !prev)
+    try {
+      await toggleLikedSong(track, user.id)
+    } catch (error) {
+      console.error('Failed to toggle like:', error)
+      setLiked((prev) => !prev)
+    }
   }
 
   if (!user) return null
