@@ -150,36 +150,36 @@ export default function SubscriptionsPage() {
     }
   }
 
+  const startPayPal = async () => {
+    const token = getToken()
+    if (!token) {
+      router.push('/login')
+      return
+    }
+    const res = await fetch('/api/paypal/create-order', {
+      method: 'POST',
+      headers: withCsrfHeader({
+        Authorization: `Bearer ${token}`,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      throw new Error(data.error || 'Unable to start PayPal checkout')
+    }
+    if (data.approvalUrl) {
+      window.location.href = data.approvalUrl
+      return
+    }
+    throw new Error('No approval URL returned from PayPal')
+  }
+
   const handlePremiumPlan = async () => {
     if (loadingPlan || !user) return
     setLoadingPlan('PREMIUM')
     setMessage('')
 
     try {
-      const token = getToken()
-      if (!token) {
-        router.push('/login')
-        return
-      }
-
-      const res = await fetch('/api/paypal/create-order', {
-        method: 'POST',
-        headers: withCsrfHeader({
-          Authorization: `Bearer ${token}`,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Unable to start PayPal checkout')
-      }
-
-      if (data.approvalUrl) {
-        window.location.href = data.approvalUrl
-      } else {
-        throw new Error('No approval URL returned from PayPal')
-      }
+      await startPayPal()
     } catch (error: any) {
       setMessage(error.message || 'An error occurred')
       setLoadingPlan(null)
