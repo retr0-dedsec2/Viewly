@@ -2,8 +2,9 @@
 
 import { useRef, useState } from 'react'
 import { Mic, Loader2, Music2, RefreshCw, Square, Activity } from 'lucide-react'
-import { Music } from '@/types/music'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { withCsrfHeader } from '@/lib/csrf'
+import { Music } from '@/types/music'
 
 type HummingSearchProps = {
   onMatch: (track: Music) => void
@@ -69,6 +70,7 @@ export default function HummingSearch({ onMatch }: HummingSearchProps) {
 
       const res = await fetch('/api/humming', {
         method: 'POST',
+        headers: withCsrfHeader(),
         body: form,
       })
       const data = await res.json()
