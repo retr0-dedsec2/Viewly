@@ -164,7 +164,8 @@ export default function SubscriptionsPage() {
     })
     const data = await res.json()
     if (!res.ok) {
-      throw new Error(data.error || 'Unable to start PayPal checkout')
+      const detail = data.details || data.statusCode || data.error
+      throw new Error(data.error || detail || 'Unable to start PayPal checkout')
     }
     if (data.approvalUrl) {
       window.location.href = data.approvalUrl

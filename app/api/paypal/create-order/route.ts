@@ -104,9 +104,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const errorMessage = description || message || 'Failed to create PayPal order'
     return NextResponse.json(
       {
-        error: 'Failed to create PayPal order',
+        error: errorMessage,
         details: description || message,
         statusCode,
       },
