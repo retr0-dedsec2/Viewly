@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Mic, Waveform, Loader2, Music2, RefreshCw, Square } from 'lucide-react'
+import { Mic, Loader2, Music2, RefreshCw, Square, Activity } from 'lucide-react'
 import { Music } from '@/types/music'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -91,7 +91,7 @@ export default function HummingSearch({ onMatch }: HummingSearchProps) {
   return (
     <div className="bg-spotify-light/60 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-lg">
       <div className="flex items-center gap-2 mb-3">
-        <Waveform size={18} className="text-spotify-green" />
+        <Activity size={18} className="text-spotify-green" />
         <p className="text-white font-semibold">{t('startHumming')}</p>
       </div>
       <p className="text-gray-400 text-sm mb-4">{t('hummingHint')}</p>
