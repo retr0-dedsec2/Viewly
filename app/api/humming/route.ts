@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'node:crypto'
 import { Music } from '@/types/music'
-
-const AUDD_ENDPOINT = 'https://api.audd.io/'
 
 function extractYouTubeId(url?: string | null) {
   if (!url) return undefined
-  const match = url.match(/v=([\\w-]{6,})/) || url.match(/youtu\\.be\\/([\\w-]{6,})/)
+  const match = url.match(/v=([\w-]{6,})/) || url.match(/youtu\.be\/([\w-]{6,})/)
   return match?.[1]
 }
 
@@ -19,7 +18,7 @@ function mapToMusic(result: any): Music {
     result?.spotify?.id ||
     result?.apple_music?.id ||
     extractYouTubeId(result?.youtube?.link) ||
-    `${result?.artist || 'unknown'}-${result?.title || 'track'}`.toLowerCase().replace(/\\s+/g, '-')
+    `${result?.artist || 'unknown'}-${result?.title || 'track'}`.toLowerCase().replace(/\s+/g, '-')
 
   return {
     id,
@@ -33,8 +32,11 @@ function mapToMusic(result: any): Music {
 }
 
 export async function POST(req: NextRequest) {
-  const token = process.env.AUDD_API_TOKEN
-  if (!token) {
+  const host = process.env.ACR_HOST
+  const accessKey = process.env.ACR_ACCESS_KEY
+  const accessSecret = process.env.ACR_ACCESS_SECRET
+
+  if (!host || !accessKey || !accessSecret) {
     return NextResponse.json({ error: 'Humming recognition is not configured.' }, { status: 500 })
   }
 
@@ -45,28 +47,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Audio file is required' }, { status: 400 })
     }
 
-    const forwardForm = new FormData()
-    forwardForm.append('api_token', token)
-    forwardForm.append('return', 'apple_music,spotify,youtube')
-    forwardForm.append('file', file)
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const sampleBytes = buffer.byteLength
 
-    const res = await fetch(AUDD_ENDPOINT, {
+    const dataType = 'audio'
+    const signatureVersion = '1'
+    const timestamp = Math.floor(Date.now() / 1000).toString()
+    const stringToSign = ['POST', '/v1/identify', accessKey, dataType, signatureVersion, timestamp].join('\n')
+    const signature = crypto.createHmac('sha1', accessSecret).update(stringToSign).digest('base64')
+
+    const forwardForm = new FormData()
+    forwardForm.append('sample', new Blob([buffer]), 'humming.webm')
+    forwardForm.append('sample_bytes', sampleBytes.toString())
+    forwardForm.append('access_key', accessKey)
+    forwardForm.append('data_type', dataType)
+    forwardForm.append('signature_version', signatureVersion)
+    forwardForm.append('signature', signature)
+    forwardForm.append('timestamp', timestamp)
+
+    const endpoint = host.startsWith('http') ? `${host}/v1/identify` : `https://${host}/v1/identify`
+    const res = await fetch(endpoint, {
       method: 'POST',
       body: forwardForm,
     })
 
     if (!res.ok) {
       const errorText = await res.text()
-      console.error('Audd request failed', errorText)
+      console.error('ACR request failed', errorText)
       return NextResponse.json({ error: 'Humming service unavailable' }, { status: 502 })
     }
 
     const data = await res.json()
-    if (!data?.result) {
+    const result = data?.metadata?.music?.[0]
+    if (!result) {
       return NextResponse.json({ error: 'No match found' }, { status: 404 })
     }
 
-    const track = mapToMusic(data.result)
+    const track = mapToMusic({
+      title: result.title,
+      artist: result.artists?.[0]?.name,
+      album: result.album?.name,
+      spotify: result.external_metadata?.spotify,
+      apple_music: result.external_metadata?.apple_music,
+      youtube: { link: result.external_metadata?.youtube?.vid ? `https://youtu.be/${result.external_metadata.youtube.vid}` : undefined },
+      timecode: result.play_offset_ms ? result.play_offset_ms / 1000 : 0,
+    })
+
     return NextResponse.json({ track })
   } catch (error) {
     console.error('Humming route error', error)
