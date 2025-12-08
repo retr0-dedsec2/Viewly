@@ -22,7 +22,7 @@ export default function RootLayout({
       <head>
         <meta name="google-site-verification" content="ftF4Bd9DyJkxOCHWxiXMVBN9Hspys8S-FlbSabC2b3Y" />
       </head>
-      <body className="pb-24 md:pb-28">
+      <body>
         {adsClient && (
           <Script
             id="google-adsense"

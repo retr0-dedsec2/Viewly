@@ -122,6 +122,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   return (
     <PlayerContext.Provider value={value}>
       {children}
+      <div className="h-20 lg:h-24" aria-hidden="true" />
       <MusicPlayer
         track={currentTrack}
         isPlaying={isPlaying}
