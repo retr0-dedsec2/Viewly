@@ -16,13 +16,13 @@ type RoomState = {
 
 export default function ListeningRoom() {
   const [userName, setUserName] = useState('')
+  const [roomCodeInput, setRoomCodeInput] = useState('')
   const [room, setRoom] = useState<RoomState | null>(null)
   const [status, setStatus] = useState<string>('')
   const [polling, setPolling] = useState(false)
   const { currentTrack, playTrack } = usePlayer()
 
   const roomCode = room?.id || ''
-
   const canBroadcast = useMemo(() => Boolean(room && currentTrack), [room, currentTrack])
 
   useEffect(() => {
@@ -59,25 +59,30 @@ export default function ListeningRoom() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Unable to create room')
       setRoom(data.room)
-      setStatus('Room created. Share the code to invite others.')
+      setRoomCodeInput(data.room.id)
+      setStatus('Salon créé. Partage le code pour inviter.')
     } catch (err: any) {
       setStatus(err.message || 'Failed to create room')
     }
   }
 
   const joinRoom = async () => {
-    if (!roomCode) return
+    const code = roomCodeInput.trim().toUpperCase()
+    if (!code) {
+      setStatus('Entre un code de salon.')
+      return
+    }
     setStatus('')
     try {
       const res = await fetch('/api/rooms', {
         method: 'POST',
         headers: withCsrfHeader({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ action: 'join', roomId: roomCode, userName: userName || 'Guest' }),
+        body: JSON.stringify({ action: 'join', roomId: code, userName: userName || 'Guest' }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Unable to join room')
       setRoom(data.room)
-      setStatus('Joined room. You will receive the current track when the host plays.')
+      setStatus('Salon rejoint. Le morceau du host sera synchronisé.')
     } catch (err: any) {
       setStatus(err.message || 'Failed to join room')
     }
@@ -95,7 +100,7 @@ export default function ListeningRoom() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Unable to broadcast track')
       setRoom(data.room)
-      setStatus('Track broadcast to the room.')
+      setStatus('Morceau partagé avec le salon.')
     } catch (err: any) {
       setStatus(err.message || 'Failed to broadcast')
     }
@@ -105,9 +110,9 @@ export default function ListeningRoom() {
     if (!roomCode || typeof navigator === 'undefined') return
     try {
       await navigator.clipboard.writeText(roomCode)
-      setStatus('Room code copied to clipboard')
+      setStatus('Code copié dans le presse-papiers')
     } catch {
-      setStatus('Copy failed, share manually')
+      setStatus('Copie impossible, partage manuellement')
     }
   }
 
@@ -117,7 +122,7 @@ export default function ListeningRoom() {
         <Radio size={18} className="text-spotify-green" />
         <div>
           <p className="text-white font-semibold text-sm">Listening Room</p>
-          <p className="text-gray-400 text-xs">Crée ou rejoins une session synchronisée</p>
+          <p className="text-gray-400 text-xs">Créer ou rejoindre une session synchronisée</p>
         </div>
       </div>
 
@@ -128,7 +133,13 @@ export default function ListeningRoom() {
           placeholder="Ton pseudo"
           className="flex-1 bg-black/30 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-spotify-green"
         />
-        <div className="flex gap-2">
+        <input
+          value={roomCodeInput}
+          onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+          placeholder="Code salon"
+          className="flex-1 bg-black/30 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-spotify-green"
+        />
+        <div className="flex gap-2 sm:flex-col sm:w-32">
           <button
             onClick={createRoom}
             className="px-3 py-2 rounded-lg bg-spotify-green text-black font-semibold text-sm hover:bg-green-500"
@@ -163,7 +174,7 @@ export default function ListeningRoom() {
           <p className="text-xs text-gray-400">
             Host: {room.host} • {room.members.length} participant(s)
           </p>
-          <p className="text-xs text-gray-500">{polling ? 'Sync activé' : 'Sync arrêté'}</p>
+          <p className="text-xs text-gray-500">{polling ? 'Sync en cours' : 'Sync en pause'}</p>
           {room.currentTrack ? (
             <div className="flex items-center gap-3 bg-black/40 border border-gray-800 rounded-lg p-2">
               <img src={room.currentTrack.cover} className="w-12 h-12 rounded object-cover" alt={room.currentTrack.title} />
