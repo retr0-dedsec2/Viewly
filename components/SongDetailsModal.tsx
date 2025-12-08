@@ -4,9 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Music } from '@/types/music'
 import { Clock, ExternalLink, Facebook, Twitter, X as CloseIcon } from 'lucide-react'
 import ModalErrorBoundary from './ModalErrorBoundary'
-import { useAuth } from '@/contexts/AuthContext'
-import { getToken } from '@/lib/auth-client'
-import GoogleAd from './GoogleAd'
 
 type SongDetailsModalProps = {
   track: Music | null
@@ -33,21 +30,15 @@ const SpotifyIcon = ({ className }: { className?: string }) => (
 
 export default function SongDetailsModal({ track, onClose }: SongDetailsModalProps) {
   const videoUrl = track?.videoId ? `https://www.youtube.com/watch?v=${track.videoId}` : undefined
-  const lyricSearchUrl = useMemo(
-    () => (track ? `https://www.google.com/search?q=${encodeURIComponent(`${track.title} ${track.artist} lyrics`)}` : ''),
-    [track]
-  )
   const spotifySearchUrl = useMemo(
     () => (track ? `https://open.spotify.com/search/${encodeURIComponent(`${track.title} ${track.artist}`)}` : ''),
     [track]
   )
-  const [lyrics, setLyrics] = useState<string | null>(null)
-  const [lyricsState, setLyricsState] = useState<'idle' | 'loading' | 'loaded' | 'error' | 'not_found'>('idle')
-  const [remainingQuota, setRemainingQuota] = useState<number | null>(null)
-  const [lyricsMessage, setLyricsMessage] = useState<string>('')
+  const googleSearchUrl = useMemo(
+    () => (track ? `https://www.google.com/search?q=${encodeURIComponent(`${track.title} ${track.artist}`)}` : ''),
+    [track]
+  )
   const [shareUrl, setShareUrl] = useState<string>('')
-  const { user } = useAuth()
-  const isPremium = user?.subscriptionPlan === 'PREMIUM'
 
   if (!track) return null
 
@@ -80,13 +71,6 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
   }
 
   useEffect(() => {
-    setLyrics(null)
-    setLyricsState('idle')
-    setLyricsMessage('')
-    setRemainingQuota(null)
-  }, [track?.artist, track?.title])
-
-  useEffect(() => {
     if (!track) return
     if (videoUrl) {
       setShareUrl(videoUrl)
@@ -96,49 +80,6 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
       setShareUrl(window.location.href)
     }
   }, [track, videoUrl])
-
-  const fetchLyrics = async () => {
-    if (!track) return
-    if (lyricsState === 'loading') return
-    setLyricsState('loading')
-    setLyricsMessage('')
-    const token = getToken()
-    try {
-      const res = await fetch(
-        `/api/lyrics?artist=${encodeURIComponent(track.artist)}&title=${encodeURIComponent(track.title)}`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        }
-      )
-      const data = await res.json()
-      if (!res.ok) {
-        if (res.status === 429) {
-          setLyricsState('not_found')
-          setLyricsMessage(data.error || 'Quota atteint pour les paroles sur le plan gratuit.')
-          setRemainingQuota(0)
-          return
-        }
-        throw new Error(data.error || 'Unable to load lyrics')
-      }
-      if (data?.lyrics) {
-        setLyrics(data.lyrics)
-        setLyricsState('loaded')
-      } else {
-        setLyricsState('not_found')
-      }
-      setRemainingQuota(typeof data?.remainingQuota === 'number' ? data.remainingQuota : null)
-    } catch (error: any) {
-      setLyricsState('error')
-      setLyricsMessage(error.message || 'Could not load lyrics.')
-    }
-  }
-
-  const quotaCopy = () => {
-    if (isPremium) return 'Paroles illimitees avec le plan Premium.'
-    if (remainingQuota === 0) return 'Quota de paroles atteint sur le plan gratuit. Reessayez plus tard ou passez Premium.'
-    if (remainingQuota === null) return '3 recherches de paroles par heure sur le plan gratuit.'
-    return `Il vous reste ${remainingQuota} recherche${remainingQuota > 1 ? 's' : ''} de paroles cette heure.`
-  }
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -181,16 +122,8 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm text-gray-400">Lyrics & artist info</p>
+                <p className="text-sm text-gray-400">Explorer</p>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={fetchLyrics}
-                    disabled={lyricsState === 'loading' || (!isPremium && remainingQuota === 0)}
-                    className="px-3 py-2 rounded-full bg-spotify-green text-black font-semibold flex items-center gap-2 hover:bg-green-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {lyricsState === 'loading' ? 'Chargement...' : 'Afficher les paroles'}
-                    <ExternalLink size={16} />
-                  </button>
                   {videoUrl && (
                     <a
                       href={videoUrl}
@@ -203,15 +136,6 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
                     </a>
                   )}
                   <a
-                    href={lyricSearchUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-2 rounded-full bg-black/30 border border-gray-800 text-white flex items-center gap-2 hover:bg-black/50 transition-colors"
-                  >
-                    Recherche manuelle
-                    <ExternalLink size={16} />
-                  </a>
-                  <a
                     href={spotifySearchUrl}
                     target="_blank"
                     rel="noreferrer"
@@ -220,33 +144,16 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
                     Open in Spotify
                     <ExternalLink size={16} />
                   </a>
+                  <a
+                    href={googleSearchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-2 rounded-full bg-black/30 border border-gray-800 text-white flex items-center gap-2 hover:bg-black/50 transition-colors"
+                  >
+                    Recherche Google
+                    <ExternalLink size={16} />
+                  </a>
                 </div>
-                <div className="bg-black/25 border border-gray-800 rounded-xl p-3 max-h-56 overflow-y-auto">
-                  {lyricsState === 'loading' && (
-                    <p className="text-sm text-gray-400">Fetching lyrics.</p>
-                  )}
-                  {lyricsState === 'loaded' && lyrics && (
-                    <pre className="whitespace-pre-wrap text-sm text-white leading-relaxed">{lyrics}</pre>
-                  )}
-                  {lyricsState === 'not_found' && (
-                    <p className="text-sm text-gray-400">
-                      Lyrics unavailable here. Try the lookup button above.
-                    </p>
-                  )}
-                  {lyricsState === 'error' && (
-                    <p className="text-sm text-gray-400">Could not load lyrics right now.</p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1 text-xs text-gray-400">
-                  <span>{quotaCopy()}</span>
-                  {lyricsMessage && <span className="text-amber-200">{lyricsMessage}</span>}
-                </div>
-                {!isPremium && (
-                  <div className="bg-black/15 border border-gray-800 rounded-lg p-3">
-                    <p className="text-xs text-gray-400 mb-2">Annonce</p>
-                    <GoogleAd className="min-h-[90px]" />
-                  </div>
-                )}
               </div>
 
               <div>

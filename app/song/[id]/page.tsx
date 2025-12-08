@@ -99,14 +99,6 @@ export default async function SongPage({ params }: { params: { id: string } }) {
                   Open on YouTube
                 </a>
               )}
-              <a
-                href={`https://www.google.com/search?q=${encodeURIComponent(`${song.title} ${song.artist} lyrics`)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-4 py-2 rounded-full bg-black/30 border border-gray-800 text-white hover:bg-black/50 transition-colors"
-              >
-                Lyrics lookup
-              </a>
             </div>
           </div>
         </div>

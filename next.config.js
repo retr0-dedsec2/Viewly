@@ -10,7 +10,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https: https://pagead2.googlesyndication.com https://tpc.googlesyndication.com",
       "media-src 'self' data: blob: https:",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://www.googleapis.com https://*.googleapis.com https://www.paypal.com https://api-m.paypal.com https://www.sandbox.paypal.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://vercel.live wss://vercel.live https://lrclib.net https://api.lyrics.ovh",
+      "connect-src 'self' https://www.googleapis.com https://*.googleapis.com https://www.paypal.com https://api-m.paypal.com https://www.sandbox.paypal.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://vercel.live wss://vercel.live",
       "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://vercel.live https://www.paypal.com https://www.sandbox.paypal.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
       "frame-ancestors 'none'",
       "form-action 'self'",

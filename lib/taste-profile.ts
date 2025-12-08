@@ -63,7 +63,6 @@ const stopWords = new Set([
   'feat.',
   'ft',
   'official',
-  'lyrics',
   'music',
   'video',
   'remix',
