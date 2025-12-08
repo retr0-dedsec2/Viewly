@@ -3,6 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { PlayerProvider } from '@/contexts/PlayerContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 import Script from 'next/script'
 
 export const metadata: Metadata = {
@@ -33,9 +34,11 @@ export default function RootLayout({
           />
         )}
         <ThemeProvider>
-          <AuthProvider>
-            <PlayerProvider>{children}</PlayerProvider>
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <PlayerProvider>{children}</PlayerProvider>
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

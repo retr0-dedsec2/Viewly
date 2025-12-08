@@ -6,12 +6,15 @@ import { Home, Search, Library, Heart, Plus, User, LogOut, Crown, Shield, Sun, M
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Sidebar() {
   const pathname = usePathname()
   const { user, logout, isAuthenticated } = useAuth()
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
+  const { t } = useLanguage()
 
   const handleLogout = () => {
     logout()
@@ -26,7 +29,7 @@ export default function Sidebar() {
         <Link href="/">
           <h1 className="text-2xl font-bold text-white mb-2 cursor-pointer">Viewly</h1>
         </Link>
-        <p className="text-gray-400 text-sm">Your AI Assistant</p>
+        <p className="text-gray-400 text-sm">{t('aiAssistant')}</p>
       </div>
       
       <nav className="flex-1">
@@ -41,7 +44,7 @@ export default function Sidebar() {
               }`}
             >
               <Home size={24} />
-              <span className="font-medium">Home</span>
+              <span className="font-medium">{t('home')}</span>
             </Link>
           </li>
           <li>
@@ -54,7 +57,7 @@ export default function Sidebar() {
               }`}
             >
               <Search size={24} />
-              <span className="font-medium">Search</span>
+              <span className="font-medium">{t('search')}</span>
             </Link>
           </li>
           {isAuthenticated && (
@@ -68,7 +71,7 @@ export default function Sidebar() {
                 }`}
               >
                 <Library size={24} />
-                <span className="font-medium">Your Library</span>
+                <span className="font-medium">{t('yourLibrary')}</span>
               </Link>
             </li>
           )}
@@ -83,7 +86,7 @@ export default function Sidebar() {
                 }`}
               >
                 <Crown size={22} />
-                <span className="font-medium">Abonnements</span>
+                <span className="font-medium">{t('subscriptions')}</span>
               </Link>
             </li>
           )}
@@ -98,7 +101,7 @@ export default function Sidebar() {
                 }`}
               >
                 <Shield size={22} />
-                <span className="font-medium">Admin</span>
+                <span className="font-medium">{t('admin')}</span>
               </Link>
             </li>
           )}
@@ -111,7 +114,7 @@ export default function Sidebar() {
               className="flex items-center gap-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-spotify-light rounded-lg transition-colors w-full"
             >
               <Plus size={20} />
-              <span className="font-medium">Create Playlist</span>
+              <span className="font-medium">{t('createPlaylist')}</span>
             </Link>
             <Link
               href="/liked"
@@ -122,7 +125,7 @@ export default function Sidebar() {
               }`}
             >
               <Heart size={20} />
-              <span className="font-medium">Liked Songs</span>
+              <span className="font-medium">{t('likedSongs')}</span>
             </Link>
           </div>
         )}
@@ -140,7 +143,7 @@ export default function Sidebar() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-white font-medium truncate">{user.username}</p>
-                <p className="text-gray-400 text-xs truncate">View profile</p>
+                <p className="text-gray-400 text-xs truncate">{t('viewProfile')}</p>
               </div>
             </Link>
             <button
@@ -148,7 +151,7 @@ export default function Sidebar() {
               className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-red-400 hover:bg-spotify-light rounded-lg transition-colors w-full"
             >
               <LogOut size={18} />
-              <span className="font-medium">Logout</span>
+              <span className="font-medium">{t('logout')}</span>
             </button>
           </div>
         ) : (
@@ -156,7 +159,7 @@ export default function Sidebar() {
             href="/login"
             className="flex items-center justify-center gap-2 px-4 py-3 bg-spotify-green hover:bg-green-600 text-white rounded-lg transition-colors"
           >
-            <span className="font-medium">Sign In</span>
+            <span className="font-medium">{t('signIn')}</span>
           </Link>
         )}
         <button
@@ -165,9 +168,12 @@ export default function Sidebar() {
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           <span className="font-medium">
-            {theme === 'light' ? 'Dark mode' : 'Light mode'}
+            {theme === 'light' ? t('darkMode') : t('lightMode')}
           </span>
         </button>
+        <div className="mt-3">
+          <LanguageSwitcher />
+        </div>
         <div className="text-xs text-gray-400 mt-4">
           <p>Viewly</p>
           <p className="mt-1">v1.0.0</p>

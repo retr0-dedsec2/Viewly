@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Music } from '@/types/music'
 import { Clock, ExternalLink, Facebook, Twitter, X as CloseIcon } from 'lucide-react'
 import ModalErrorBoundary from './ModalErrorBoundary'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 type SongDetailsModalProps = {
   track: Music | null
@@ -39,6 +40,7 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
     [track]
   )
   const [shareUrl, setShareUrl] = useState<string>('')
+  const { t } = useLanguage()
 
   if (!track) return null
 
@@ -102,18 +104,18 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
 
             <div className="p-5 sm:p-7 space-y-4 sm:space-y-6">
               <div>
-                <p className="text-xs uppercase text-gray-400 tracking-widest mb-1">Now exploring</p>
+                <p className="text-xs uppercase text-gray-400 tracking-widest mb-1">{t('nowExploring')}</p>
                 <h3 className="text-2xl sm:text-3xl font-bold text-white leading-tight">{track.title}</h3>
                 <p className="text-gray-300 text-sm sm:text-base mt-1">{track.artist}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-black/20 rounded-lg p-3 border border-gray-800">
-                  <p className="text-gray-400 text-xs">Album</p>
+                  <p className="text-gray-400 text-xs">{t('album')}</p>
                   <p className="text-white font-semibold truncate">{track.album || 'Unknown'}</p>
                 </div>
                 <div className="bg-black/20 rounded-lg p-3 border border-gray-800">
-                  <p className="text-gray-400 text-xs">Duration</p>
+                  <p className="text-gray-400 text-xs">{t('duration')}</p>
                   <div className="flex items-center gap-2 text-white font-semibold">
                     <Clock size={16} />
                     <span>{formatDuration(track.duration)}</span>
@@ -122,7 +124,7 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm text-gray-400">Explorer</p>
+                <p className="text-sm text-gray-400">{t('explore')}</p>
                 <div className="flex flex-wrap gap-2">
                   {videoUrl && (
                     <a
@@ -131,7 +133,7 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
                       rel="noreferrer"
                       className="px-3 py-2 rounded-full bg-black/30 border border-gray-800 text-white flex items-center gap-2 hover:bg-black/50 transition-colors"
                     >
-                      Open video
+                      {t('openVideo')}
                       <ExternalLink size={16} />
                     </a>
                   )}
@@ -141,7 +143,7 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
                     rel="noreferrer"
                     className="px-3 py-2 rounded-full bg-black/30 border border-gray-800 text-white flex items-center gap-2 hover:bg-black/50 transition-colors"
                   >
-                    Open in Spotify
+                    {t('openSpotify')}
                     <ExternalLink size={16} />
                   </a>
                   <a
@@ -150,14 +152,14 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
                     rel="noreferrer"
                     className="px-3 py-2 rounded-full bg-black/30 border border-gray-800 text-white flex items-center gap-2 hover:bg-black/50 transition-colors"
                   >
-                    Recherche Google
+                    {t('googleSearch')}
                     <ExternalLink size={16} />
                   </a>
                 </div>
               </div>
 
               <div>
-                <p className="text-sm text-gray-400 mb-2">Share</p>
+                <p className="text-sm text-gray-400 mb-2">{t('share')}</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => shareTo('twitter')}
@@ -184,7 +186,7 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
                     onClick={handleNativeShare}
                     className="px-3 py-2 rounded-full bg-spotify-green text-black font-semibold hover:bg-green-500 transition-colors"
                   >
-                    Quick share
+                    {t('quickShare')}
                   </button>
                 </div>
               </div>

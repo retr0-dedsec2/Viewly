@@ -67,7 +67,7 @@ export default function MusicPlayer({ track, isPlaying, onTogglePlay, audioRef, 
   const displayDuration = duration || track.duration
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-20 lg:h-24 bg-spotify-light border-t border-gray-800 px-3 sm:px-4 lg:px-6 flex items-center justify-between gap-2 lg:gap-4 z-20 pb-[env(safe-area-inset-bottom,0)]">
+    <div className="sticky bottom-0 w-full h-20 lg:h-24 bg-spotify-light border-t border-gray-800 px-3 sm:px-4 lg:px-6 flex items-center justify-between gap-2 lg:gap-4 z-20 pb-[env(safe-area-inset-bottom,0)]">
       {track.videoId && (
         <YoutubePlayer
           ref={youtubePlayerRef}

@@ -10,6 +10,8 @@ import GoogleAd from './GoogleAd'
 import { TasteProfile } from '@/lib/taste-profile'
 import ShareButtons from './ShareButtons'
 import SongDetailsModal from './SongDetailsModal'
+import HummingSearch from './HummingSearch'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface MainContentProps {
   playlist: Music[]
@@ -21,6 +23,7 @@ interface MainContentProps {
   tasteProfile?: TasteProfile | null
   onTastePrompt?: (prompt: string) => void
   onSearchLogged?: (query: string) => void
+  onHummingMatch?: (track: Music) => void
 }
 
 export default function MainContent({
@@ -33,9 +36,17 @@ export default function MainContent({
   tasteProfile,
   onTastePrompt,
   onSearchLogged,
+  onHummingMatch,
 }: MainContentProps) {
   const [visibleCount, setVisibleCount] = useState(10)
   const [selectedTrack, setSelectedTrack] = useState<Music | null>(null)
+  const { t } = useLanguage()
+
+  const handleHummingMatch = (track: Music) => {
+    onHummingMatch?.(track)
+    onSearchResults?.([track])
+    onPlay(track)
+  }
 
   useEffect(() => {
     setVisibleCount((current) => {
@@ -49,12 +60,15 @@ export default function MainContent({
     <>
       <div className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-28 sm:pb-12 lg:pb-14">
         <div className="mb-6 lg:mb-8">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">Good evening</h2>
-          <p className="text-gray-400 text-sm sm:text-base">Discover music with your AI assistant</p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">{t('greeting')}</h2>
+          <p className="text-gray-400 text-sm sm:text-base">{t('subtitle')}</p>
         </div>
 
         <div className="mb-6 lg:mb-8">
           <SearchBar onSearchResults={onSearchResults || (() => {})} onSearchLogged={onSearchLogged} />
+          <div className="mt-4">
+            <HummingSearch onMatch={handleHummingMatch} />
+          </div>
         </div>
 
         {showAds && <AdBanner onUpgradeClick={onUpgradeClick} />}
@@ -62,7 +76,7 @@ export default function MainContent({
 
         {/* Quick Access */}
         <div className="mb-8 lg:mb-12">
-          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-4">Made for You</h3>
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-4">{t('madeForYou')}</h3>
           {/* Mobile: horizontal scroll for larger touch targets */}
           <div className="sm:hidden -mx-1 px-1 flex gap-3 overflow-x-auto pb-2">
             {playlist.slice(0, 6).map((track) => (
@@ -118,7 +132,7 @@ export default function MainContent({
 
         {/* Playlist */}
         <div>
-          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-4">Recently Played</h3>
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-4">{t('recentlyPlayed')}</h3>
           <div className="space-y-1 sm:space-y-2">
             {playlist.slice(0, visibleCount).map((track) => (
               <div
@@ -178,7 +192,7 @@ export default function MainContent({
                   onClick={() => setVisibleCount((count) => Math.min(count + 8, playlist.length))}
                   className="w-full py-2.5 text-center bg-spotify-light hover:bg-spotify-gray text-white rounded-lg transition-colors font-medium"
                 >
-                  Load more
+                  {t('loadMore')}
                 </button>
               </div>
             )}

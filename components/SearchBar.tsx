@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getToken } from '@/lib/auth-client'
 import SearchSuggestions, { SuggestionItem } from './SearchSuggestions'
 import { withCsrfHeader } from '@/lib/csrf'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface SearchBarProps {
   onSearchResults: (results: Music[]) => void
@@ -24,6 +25,7 @@ export default function SearchBar({ onSearchResults, onClose, onSearchLogged }: 
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [aiSuggestions, setAiSuggestions] = useState<SuggestionItem[]>([])
   const { user } = useAuth()
+  const { t } = useLanguage()
 
   useEffect(() => {
     if (!user?.id) {
@@ -148,7 +150,7 @@ export default function SearchBar({ onSearchResults, onClose, onSearchLogged }: 
             setQuery(e.target.value.replace(/[<>]/g, ''))
             setShowSuggestions(true)
           }}
-          placeholder="Search for songs, artists, albums..."
+          placeholder={t('searchPlaceholder')}
           className="w-full bg-spotify-light text-white px-10 sm:px-12 py-2.5 sm:py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-spotify-green placeholder-gray-400 text-sm sm:text-base transition-all"
         />
         <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />

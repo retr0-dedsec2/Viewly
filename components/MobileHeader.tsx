@@ -3,6 +3,7 @@
 import { Menu, Moon, Sun } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import LanguageSwitcher from './LanguageSwitcher'
 
 interface MobileHeaderProps {
   onMenuClick: () => void
@@ -25,6 +26,7 @@ export default function MobileHeader({ onMenuClick }: MobileHeaderProps) {
       <h1 className="text-xl font-bold text-white">Viewly</h1>
 
       <div className="flex items-center gap-2">
+        <LanguageSwitcher compact />
         <button
           onClick={toggleTheme}
           className="p-2 rounded-lg text-white hover:bg-spotify-light transition-colors"

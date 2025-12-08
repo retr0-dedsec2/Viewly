@@ -163,6 +163,11 @@ export default function Home() {
     refreshTasteProfile()
   }
 
+  const handleHummingMatch = (track: Music) => {
+    setPlaylist([track])
+    playQueue([track], 0)
+  }
+
   const handleAISearch = async (query: string) => {
     try {
       const { sanitized, isRejected } = sanitizeSearchQuery(query)
@@ -212,6 +217,7 @@ export default function Home() {
           tasteProfile={tasteProfile}
           onTastePrompt={handleAISearch}
           onSearchLogged={refreshTasteProfile}
+          onHummingMatch={handleHummingMatch}
         />
       </div>
       {/* AI Chat */}
