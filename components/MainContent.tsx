@@ -11,6 +11,7 @@ import { TasteProfile } from '@/lib/taste-profile'
 import ShareButtons from './ShareButtons'
 import SongDetailsModal from './SongDetailsModal'
 import HummingSearch from './HummingSearch'
+import ListeningRoom from './ListeningRoom'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 interface MainContentProps {
@@ -68,6 +69,9 @@ export default function MainContent({
           <SearchBar onSearchResults={onSearchResults || (() => {})} onSearchLogged={onSearchLogged} />
           <div className="mt-4">
             <HummingSearch onMatch={handleHummingMatch} />
+          </div>
+          <div className="mt-4">
+            <ListeningRoom />
           </div>
         </div>
 
