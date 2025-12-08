@@ -5,6 +5,7 @@ import { Music } from '@/types/music'
 import { Clock, ExternalLink, Facebook, Twitter, X as CloseIcon } from 'lucide-react'
 import ModalErrorBoundary from './ModalErrorBoundary'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { createPortal } from 'react-dom'
 
 type SongDetailsModalProps = {
   track: Music | null
@@ -83,7 +84,7 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
     }
   }, [track, videoUrl])
 
-  return (
+  const modal = (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <ModalErrorBoundary>
         <div className="bg-spotify-light w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden relative">
@@ -196,4 +197,6 @@ export default function SongDetailsModal({ track, onClose }: SongDetailsModalPro
       </ModalErrorBoundary>
     </div>
   )
+
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }
