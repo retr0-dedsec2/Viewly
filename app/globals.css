@@ -147,6 +147,15 @@ body.theme-light .hover\:bg-spotify-light:hover {
   animation: slideIn 0.3s ease-out;
 }
 
+/* Custom layout tweak for large screens to balance sidebar spacing */
+@media (min-width: 1024px) {
+  .lg\:px-6 {
+    padding-left: 1.5rem;
+    padding-right: 18.5rem;
+    margin-left: 265px;
+  }
+}
+
 /* Touch-friendly buttons */
 @media (hover: none) and (pointer: coarse) {
   button, a {
