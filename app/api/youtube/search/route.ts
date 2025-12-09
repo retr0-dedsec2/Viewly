@@ -71,17 +71,26 @@ async function fetchITunesFallback(query: string, limit: number) {
     json?.results?.map((track: any) => {
       const artwork = track.artworkUrl100 || ''
       const highResThumb = artwork.replace('100x100', '480x480')
+      const thumb = highResThumb || artwork || 'https://via.placeholder.com/480'
+      const previewUrl = track.previewUrl || ''
       return {
         id: { videoId: String(track.trackId || track.collectionId || track.artistId || Math.random()) },
         snippet: {
           title: track.trackName || track.collectionName || 'Unknown title',
           channelTitle: track.artistName || 'Unknown artist',
           thumbnails: {
-            high: { url: highResThumb || artwork || 'https://via.placeholder.com/480' },
+            default: { url: thumb },
+            medium: { url: thumb },
+            high: { url: thumb },
           },
+          description: previewUrl,
         },
         contentDetails: {
           duration: msToIsoDuration(track.trackTimeMillis),
+        },
+        playback: {
+          source: 'itunes',
+          previewUrl,
         },
       }
     }) || []
