@@ -14,7 +14,7 @@ const searchCache = new Map<string, { data: any; expires: number }>()
 function buildSampleData(query: string) {
   const base = [
     {
-      id: { videoId: 'sample-1' },
+      id: { videoId: 'kJQP7kiw5Fk' },
       snippet: {
         title: `${query} (mix)`,
         channelTitle: 'Viewly Recommendations',
@@ -25,7 +25,7 @@ function buildSampleData(query: string) {
       contentDetails: { duration: 'PT3M30S' },
     },
     {
-      id: { videoId: 'sample-2' },
+      id: { videoId: 'fRh_vgS2dFE' },
       snippet: {
         title: `${query} (official audio)`,
         channelTitle: 'Viewly Recommendations',
@@ -36,7 +36,7 @@ function buildSampleData(query: string) {
       contentDetails: { duration: 'PT4M02S' },
     },
     {
-      id: { videoId: 'sample-3' },
+      id: { videoId: 'OPf0YbXqDm0' },
       snippet: {
         title: `${query} (remix)`,
         channelTitle: 'Viewly Recommendations',
