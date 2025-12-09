@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Library, Heart, Plus, User, LogOut, Crown, Shield, Sun, Moon } from 'lucide-react'
+import { Home, Search, Library, Heart, Plus, User, LogOut, Crown, Shield, Sun, Moon, Radio } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -72,6 +72,21 @@ export default function Sidebar() {
               >
                 <Library size={24} />
                 <span className="font-medium">{t('yourLibrary')}</span>
+              </Link>
+            </li>
+          )}
+          {isAuthenticated && (
+            <li>
+              <Link
+                href="/rooms"
+                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  isActive('/rooms')
+                    ? 'text-white bg-spotify-light'
+                    : 'text-gray-300 hover:text-white hover:bg-spotify-light'
+                }`}
+              >
+                <Radio size={22} />
+                <span className="font-medium">Rooms</span>
               </Link>
             </li>
           )}
