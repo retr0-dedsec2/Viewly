@@ -62,6 +62,37 @@ async function buildFavoriteArtistSeed(userId: string): Promise<PlaylistSeed | n
   }
 }
 
+function extractRequestedArtist(message: string) {
+  const patterns = [
+    /playlist\s+(?:de|of)\s+([^.,!?]+)/i,
+    /make a playlist of\s+([^.,!?]+)/i,
+    /create a playlist of\s+([^.,!?]+)/i,
+    /playlist pour\s+([^.,!?]+)/i,
+  ]
+  for (const regex of patterns) {
+    const match = message.match(regex)
+    if (match?.[1]) {
+      return match[1].trim()
+    }
+  }
+  return null
+}
+
+function buildArtistRequestSeed(artist: string): PlaylistSeed {
+  const safeArtist = artist.trim()
+  const base = [
+    { title: `${safeArtist} essentials`, artist: safeArtist },
+    { title: `${safeArtist} live`, artist: safeArtist },
+    { title: `${safeArtist} acoustic`, artist: safeArtist },
+    { title: `${safeArtist} remix`, artist: safeArtist },
+  ]
+  return {
+    name: `${safeArtist} mix`,
+    songs: dedupeSongs(base),
+    reason: `requested artist: ${safeArtist}`,
+  }
+}
+
 // AI Playlist Creation Function
 async function handlePlaylistCreation(message: string, userId?: string, seed?: PlaylistSeed) {
   const lowerMessage = message.toLowerCase()
@@ -532,12 +563,15 @@ export async function POST(request: NextRequest) {
       messageLower.includes('make')
     ) {
       console.log(`Playlist creation request. UserId: ${userId ? 'Found' : 'Not found'}`)
+      const requestedArtist = extractRequestedArtist(message)
+      const artistSeed = requestedArtist ? buildArtistRequestSeed(requestedArtist) : null
       const favoriteSeed = userId ? await buildFavoriteArtistSeed(userId) : null
+      const seed = artistSeed || favoriteSeed
 
       const playlistResponse = await handlePlaylistCreation(
         message,
         userId || undefined,
-        favoriteSeed || undefined,
+        seed || undefined,
       )
       return NextResponse.json({
         response: playlistResponse,
