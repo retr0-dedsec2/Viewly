@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Library, Heart, Plus, User, LogOut, Crown, Shield, Sun, Moon, Radio } from 'lucide-react'
+import { Home, Search, Library, Heart, Plus, User, LogOut, Crown, Shield, Sun, Moon, Radio, Settings } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -102,6 +102,21 @@ export default function Sidebar() {
               >
                 <Crown size={22} />
                 <span className="font-medium">{t('subscriptions')}</span>
+              </Link>
+            </li>
+          )}
+          {isAuthenticated && (
+            <li>
+              <Link
+                href="/account"
+                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  isActive('/account')
+                    ? 'text-white bg-spotify-light'
+                    : 'text-gray-300 hover:text-white hover:bg-spotify-light'
+                }`}
+              >
+                <Settings size={22} />
+                <span className="font-medium">Account</span>
               </Link>
             </li>
           )}
