@@ -11,6 +11,14 @@ const CACHE_TTL_MS = 1000 * 60 * 5 // 5 minutes
 const CACHE_MAX_ENTRIES = 50
 const searchCache = new Map<string, { data: any; expires: number }>()
 
+function msToIsoDuration(ms?: number) {
+  if (!ms || ms <= 0) return 'PT0S'
+  const totalSeconds = Math.round(ms / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `PT${minutes}M${seconds}S`
+}
+
 function buildSampleData(query: string) {
   const base = [
     {
@@ -48,6 +56,37 @@ function buildSampleData(query: string) {
     },
   ]
   return { items: base, fallback: true }
+}
+
+async function fetchITunesFallback(query: string, limit: number) {
+  const url = `https://itunes.apple.com/search?media=music&limit=${limit}&term=${encodeURIComponent(
+    query
+  )}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`iTunes fallback failed: ${res.status}`)
+  }
+  const json = await res.json()
+  const items =
+    json?.results?.map((track: any) => {
+      const artwork = track.artworkUrl100 || ''
+      const highResThumb = artwork.replace('100x100', '480x480')
+      return {
+        id: { videoId: String(track.trackId || track.collectionId || track.artistId || Math.random()) },
+        snippet: {
+          title: track.trackName || track.collectionName || 'Unknown title',
+          channelTitle: track.artistName || 'Unknown artist',
+          thumbnails: {
+            high: { url: highResThumb || artwork || 'https://via.placeholder.com/480' },
+          },
+        },
+        contentDetails: {
+          duration: msToIsoDuration(track.trackTimeMillis),
+        },
+      }
+    }) || []
+
+  return { items, fallback: true, source: 'itunes' }
 }
 
 function getCache(key: string) {
@@ -138,6 +177,15 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(cachedAfterFailure)
       }
 
+      // Try iTunes as a fallback to avoid empty UI when YouTube quota is exceeded
+      try {
+        const itunesData = await fetchITunesFallback(query, safeMaxResults)
+        setCache(cacheKey, itunesData)
+        return NextResponse.json(itunesData)
+      } catch (itunesError) {
+        console.error('iTunes fallback failed:', itunesError)
+      }
+
       return NextResponse.json(buildSampleData(query), { status: 200 })
     }
 
@@ -147,6 +195,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data)
   } catch (error) {
     console.error('YouTube search error:', error)
+    // Try iTunes as last resort inside catch as well
+    try {
+      const fallback = await fetchITunesFallback(query, 10)
+      return NextResponse.json(fallback)
+    } catch (itunesError) {
+      console.error('iTunes fallback failed in catch:', itunesError)
+    }
+
     return NextResponse.json(buildSampleData(query), { status: 200 })
   }
 }
