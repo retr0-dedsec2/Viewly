@@ -4,7 +4,7 @@
  */
 const TAG_RE = /<[^>]*>?/g
 const DANGEROUS_PATTERN = /<|>|javascript:|data:text\/html|onerror=|onload=/i
-const SAFE_QUERY_PATTERN = /^[\w\s\-'&,!.?/()]+$/i
+const SAFE_QUERY_PATTERN = /^[\p{L}\p{N}\s\-'&,!.?/()]+$/iu
 
 export function sanitizeSearchQuery(input: string) {
   const trimmed = input.trim()
