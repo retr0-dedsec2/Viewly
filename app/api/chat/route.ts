@@ -68,6 +68,7 @@ function extractRequestedArtist(message: string) {
     /make a playlist of\s+([^.,!?]+)/i,
     /create a playlist of\s+([^.,!?]+)/i,
     /playlist pour\s+([^.,!?]+)/i,
+    /cr[ée]e?\s+moi\s+une\s+playlist\s+de\s+([^.,!?]+)/i,
   ]
   for (const regex of patterns) {
     const match = message.match(regex)
