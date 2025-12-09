@@ -532,15 +532,7 @@ export async function POST(request: NextRequest) {
       messageLower.includes('make')
     ) {
       console.log(`Playlist creation request. UserId: ${userId ? 'Found' : 'Not found'}`)
-      const wantsFavorites =
-        messageLower.includes('favorite') ||
-        messageLower.includes('favourite') ||
-        messageLower.includes('prefere') ||
-        messageLower.includes('préféré') ||
-        messageLower.includes('prefer') ||
-        messageLower.includes('favorito') ||
-        messageLower.includes('favorita')
-      const favoriteSeed = wantsFavorites && userId ? await buildFavoriteArtistSeed(userId) : null
+      const favoriteSeed = userId ? await buildFavoriteArtistSeed(userId) : null
 
       const playlistResponse = await handlePlaylistCreation(
         message,

@@ -18,7 +18,15 @@ export default function AIChat({ onClose, onSearchRequest }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "🎵 Hi! I'm your AI music assistant. I can help you:\n\n• **Create custom playlists** - \"Make a workout playlist\"\n• **Search for songs** - \"Find songs by Taylor Swift\"\n• **Get recommendations** - \"Suggest some chill music\"\n• **Discover new music** - \"What's trending?\"\n\nWhat would you like to do? 🎶",
+      content: `Hi! I'm your AI music assistant. I can chat, search YouTube, and build playlists.
+
+Try one of these:
+• Make a workout playlist
+• Find songs by Taylor Swift
+• Suggest some chill music
+• Show me trending hits
+
+Tell me a mood or artist and I'll handle it.`,
     },
   ])
   const [input, setInput] = useState('')
