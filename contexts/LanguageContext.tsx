@@ -77,7 +77,7 @@ const translations: Record<Language, Record<string, string>> = {
     signIn: 'Connexion',
     darkMode: 'Mode sombre',
     lightMode: 'Mode clair',
-    aiAssistant: 'Votre assistant IA',
+    aiAssistant: 'The One More Thing of Music',
     startHumming: 'Fredonnez pour trouver un titre',
     recording: 'En écoute...',
     processing: 'Analyse du fredonnement...',
