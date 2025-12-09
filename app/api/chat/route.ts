@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/auth-tokens'
 import { normalizeTasteQuery } from '@/lib/taste-queries'
@@ -438,7 +438,7 @@ function generatePlaylistSongs(genre: string, mood: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message } = await request.json()
+    const { message, history } = await request.json()
 
     if (!message) {
       return NextResponse.json(
@@ -485,22 +485,48 @@ export async function POST(request: NextRequest) {
     }
 
     // Enhanced AI responses with YouTube integration
-  const messageLower = message.toLowerCase()
+    const messageLower = message.toLowerCase()
+    const previousUserMessage =
+      Array.isArray(history) && history.length
+        ? [...history]
+            .reverse()
+            .find((m: any) => m?.role === 'user' && m?.content && m.content !== message)?.content
+        : null
 
-  // Help/guide intent
-  if (
-    messageLower.includes('help') ||
-    messageLower.includes('commands') ||
-    messageLower.includes('how do')
-  ) {
-    return NextResponse.json({
-      response:
-        "I can create playlists (\"make a workout playlist\"), search YouTube for songs (\"find songs by Dua Lipa\"), or recommend tracks based on your taste. Tell me a mood or artist and I'll take it from there.",
-    })
-  }
+    // Help/guide intent
+    if (
+      messageLower.includes('help') ||
+      messageLower.includes('commands') ||
+      messageLower.includes('how do')
+    ) {
+      return NextResponse.json({
+        response:
+          "I can create playlists (\"make a workout playlist\"), search YouTube for songs (\"find songs by Dua Lipa\"), recommend tracks from your taste, sync listening rooms, or start a humming search. Tell me a mood, artist, or vibe and I'll handle it.",
+      })
+    }
 
-  // Check if user wants to create a playlist
-  if (
+    if (
+      messageLower.includes('hello') ||
+      messageLower.includes('hi') ||
+      messageLower.includes('salut') ||
+      messageLower.includes('bonjour')
+    ) {
+      const follow = previousUserMessage
+        ? `How can I help with what you asked earlier: "${previousUserMessage}"?`
+        : 'What should we listen to next?'
+      return NextResponse.json({ response: `Hey! ${follow}` })
+    }
+
+    if (
+      messageLower.includes('thank') ||
+      messageLower.includes('merci') ||
+      messageLower.includes('thx')
+    ) {
+      return NextResponse.json({ response: "You're welcome! Need another playlist or search?" })
+    }
+
+    // Check if user wants to create a playlist
+    if (
       messageLower.includes('playlist') ||
       messageLower.includes('create') ||
       messageLower.includes('make')
@@ -591,6 +617,45 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    if (
+      messageLower.includes('room') ||
+      messageLower.includes('rooms') ||
+      messageLower.includes('sync') ||
+      messageLower.includes('listening party')
+    ) {
+      return NextResponse.json({
+        response:
+          "Want to sync with friends? Go to the Rooms page, create a room to get a code, and share it. I can also search a vibe for your room—just tell me what to play.",
+        action: 'rooms',
+      })
+    }
+
+    if (
+      messageLower.includes('hum') ||
+      messageLower.includes('humming') ||
+      messageLower.includes('fredonne') ||
+      messageLower.includes('chant')
+    ) {
+      return NextResponse.json({
+        response:
+          'Hold the humming button for up to 10s and I will try to identify the song. You can also tell me the mood so I can queue similar tracks.',
+      })
+    }
+
+    if (
+      messageLower.includes('premium') ||
+      messageLower.includes('ads') ||
+      messageLower.includes('adfree') ||
+      messageLower.includes('prix') ||
+      messageLower.includes('price')
+    ) {
+      return NextResponse.json({
+        response:
+          'Premium removes ads and unlocks priority AI. You can upgrade from the Subscriptions page, and I will make sure your sessions stay ad-free.',
+        action: 'upgrade',
+      })
+    }
+
     // Personalized responses based on user context
     if (userContext && userContext.likedSongs.length > 0) {
       const topArtist = userContext.likedSongs[0]
@@ -607,9 +672,12 @@ export async function POST(request: NextRequest) {
 
     // Default intelligent responses
     const responses = [
-      `I understand you're interested in "${message}". I can help you search YouTube for music, create playlists, or find recommendations. What would you like to do?`,
-      `Great! I can help you discover music on YouTube. Would you like me to search for "${message}" or find similar tracks?`,
-      `I'd love to help! I can search YouTube for music, recommend tracks based on your taste, or help you create playlists. What interests you?`,
+      `I understand you're interested in "${message}". I can search YouTube, create playlists, or find recommendations. What would you like to do?`,
+      `Great! I can help you discover music. Should I search for "${message}" or find similar tracks?`,
+      `I'd love to help! I can search YouTube, recommend tracks based on your taste, or help you create playlists. What interests you?`,
+      previousUserMessage
+        ? `Earlier you mentioned "${previousUserMessage}". Should I keep going with that or switch to "${message}"?`
+        : `Tell me a mood or artist and I'll find the right tracks. Want to start with "${message}"?`,
     ]
 
     const randomResponse = responses[Math.floor(Math.random() * responses.length)]
@@ -628,3 +696,7 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+
+
+

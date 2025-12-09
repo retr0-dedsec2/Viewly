@@ -37,13 +37,12 @@ export default function AIChat({ onClose, onSearchRequest }: AIChatProps) {
     if (!input.trim() || isLoading) return
 
     const userMessage: Message = { role: 'user', content: input }
-    setMessages((prev) => [...prev, userMessage])
     const userInput = input
+    setMessages((prev) => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
 
     try {
-      // Get auth token if user is logged in
       const token = localStorage.getItem('auth_token')
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -55,22 +54,20 @@ export default function AIChat({ onClose, onSearchRequest }: AIChatProps) {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: withCsrfHeader(headers),
-        body: JSON.stringify({ message: userInput }),
+        body: JSON.stringify({ message: userInput, history: [...messages, userMessage] }),
       })
 
       const data = await response.json()
-      
+
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: data.response },
       ])
 
-      // Handle AI actions
       if (data.action === 'search' && data.query && onSearchRequest) {
-        // Trigger search in parent component
         setTimeout(() => {
           onSearchRequest(data.query)
-        }, 1000) // Small delay to show the AI response first
+        }, 500)
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -196,6 +193,18 @@ export default function AIChat({ onClose, onSearchRequest }: AIChatProps) {
             className="px-3 py-1 bg-spotify-green/20 text-spotify-green rounded-full text-xs hover:bg-spotify-green/30 transition-colors"
           >
             Trending
+          </button>
+          <button
+            onClick={() => setInput('Help: what can you do?')}
+            className="px-3 py-1 bg-spotify-green/20 text-spotify-green rounded-full text-xs hover:bg-spotify-green/30 transition-colors"
+          >
+            Help
+          </button>
+          <button
+            onClick={() => setInput('Create a playlist from my favorites')}
+            className="px-3 py-1 bg-spotify-green/20 text-spotify-green rounded-full text-xs hover:bg-spotify-green/30 transition-colors"
+          >
+            Favorites Mix
           </button>
         </div>
         <p className="text-xs text-gray-500 text-center">
