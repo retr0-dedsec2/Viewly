@@ -131,6 +131,13 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('YouTube search failed:', response.status, errorText)
+
+      // Try to serve a previously cached live response for this query
+      const cachedAfterFailure = getCache(cacheKey)
+      if (cachedAfterFailure) {
+        return NextResponse.json(cachedAfterFailure)
+      }
+
       return NextResponse.json(buildSampleData(query), { status: 200 })
     }
 
