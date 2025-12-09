@@ -14,6 +14,50 @@ const searchCache = new Map<
   { data: any; expires: number }
 >()
 
+const SAMPLE_DATA = {
+  items: [
+    {
+      id: { videoId: 'kJQP7kiw5Fk' },
+      snippet: {
+        title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
+        channelTitle: 'Luis Fonsi',
+        thumbnails: {
+          high: { url: 'https://i.ytimg.com/vi/kJQP7kiw5Fk/hqdefault.jpg' },
+        },
+      },
+      contentDetails: {
+        duration: 'PT3M48S',
+      },
+    },
+    {
+      id: { videoId: 'fRh_vgS2dFE' },
+      snippet: {
+        title: 'Justin Bieber - Sorry (PURPOSE : The Movement)',
+        channelTitle: 'Justin Bieber',
+        thumbnails: {
+          high: { url: 'https://i.ytimg.com/vi/fRh_vgS2dFE/hqdefault.jpg' },
+        },
+      },
+      contentDetails: {
+        duration: 'PT3M20S',
+      },
+    },
+    {
+      id: { videoId: 'OPf0YbXqDm0' },
+      snippet: {
+        title: 'Mark Ronson - Uptown Funk ft. Bruno Mars',
+        channelTitle: 'Mark Ronson',
+        thumbnails: {
+          high: { url: 'https://i.ytimg.com/vi/OPf0YbXqDm0/hqdefault.jpg' },
+        },
+      },
+      contentDetails: {
+        duration: 'PT4M31S',
+      },
+    },
+  ],
+}
+
 function getCache(key: string) {
   const cached = searchCache.get(key)
   if (cached && cached.expires > Date.now()) return cached.data
