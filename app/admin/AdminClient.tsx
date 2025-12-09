@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Shield, Users, Crown, RefreshCcw, Check, Loader2 } from 'lucide-react'
+import { Shield, Users, Crown, RefreshCcw, Check, Loader2, AlertTriangle, Music, CreditCard } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
@@ -20,11 +20,32 @@ type AdminUser = {
   createdAt: string
 }
 
+type KeyStatus = { key: string; present: boolean }
+
+type SystemInfo = {
+  music: {
+    youtube: { keys: KeyStatus[] }
+    humming: { host: boolean; accessKey: boolean; accessSecret: boolean }
+    adsense: { client: boolean; slot: boolean; keys: KeyStatus[] }
+  }
+  paypal: {
+    mode: string
+    credentials: {
+      clientId: KeyStatus[]
+      clientSecret: KeyStatus[]
+      merchantEmail: KeyStatus[]
+    }
+  }
+}
+
 export default function AdminClient() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
+  const [systemLoading, setSystemLoading] = useState(false)
+  const [systemError, setSystemError] = useState<string | null>(null)
   const { user, isAuthenticated } = useAuth()
 
   useEffect(() => {
@@ -33,6 +54,7 @@ export default function AdminClient() {
       return
     }
     fetchUsers()
+    fetchSystemInfo()
   }, [user, isAuthenticated])
 
   const fetchUsers = async () => {
@@ -49,6 +71,24 @@ export default function AdminClient() {
       console.error(error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSystemInfo = async () => {
+    setSystemLoading(true)
+    setSystemError(null)
+    try {
+      const token = getToken()
+      const res = await fetch('/api/system', {
+        headers: withCsrfHeader({ Authorization: `Bearer ${token}` }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Unable to load system status')
+      setSystemInfo(data)
+    } catch (error: any) {
+      setSystemError(error.message || 'Failed to load system status')
+    } finally {
+      setSystemLoading(false)
     }
   }
 
@@ -82,6 +122,17 @@ export default function AdminClient() {
     }
   }
 
+  const StatusPill = ({ ok, label }: { ok: boolean; label: string }) => (
+    <span
+      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+        ok ? 'bg-spotify-green/20 text-spotify-green' : 'bg-red-900/40 text-red-200'
+      }`}
+    >
+      {ok ? <Check size={14} /> : <AlertTriangle size={14} />}
+      {label}
+    </span>
+  )
+
   if (!isAuthenticated || !user || user.role !== 'ADMIN') {
     return null
   }
@@ -107,12 +158,121 @@ export default function AdminClient() {
               </div>
             </div>
             <button
-              onClick={fetchUsers}
+              onClick={() => {
+                fetchUsers()
+                fetchSystemInfo()
+              }}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-spotify-green text-black font-semibold hover:bg-green-600 transition-colors"
             >
               <RefreshCcw size={16} />
               Refresh
             </button>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+            <div className="bg-spotify-light rounded-lg border border-white/5 p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 text-white">
+                  <Music size={18} className="text-spotify-green" />
+                  <span className="font-semibold">Music system</span>
+                </div>
+                <button
+                  onClick={fetchSystemInfo}
+                  className="text-xs text-gray-300 hover:text-white underline"
+                >
+                  Refresh status
+                </button>
+              </div>
+              {systemLoading ? (
+                <div className="flex items-center gap-2 text-gray-300">
+                  <Loader2 className="animate-spin" size={16} />
+                  Vérification des services...
+                </div>
+              ) : systemError ? (
+                <div className="flex items-center gap-2 text-red-200">
+                  <AlertTriangle size={16} />
+                  {systemError}
+                </div>
+              ) : (
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">YouTube API</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(systemInfo?.music.youtube.keys || []).map((k) => (
+                        <StatusPill key={k.key} ok={k.present} label={k.key} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Humming search (ACR)</p>
+                    <div className="flex flex-wrap gap-2">
+                      <StatusPill ok={Boolean(systemInfo?.music.humming.host)} label="ACR_HOST" />
+                      <StatusPill ok={Boolean(systemInfo?.music.humming.accessKey)} label="ACR_ACCESS_KEY" />
+                      <StatusPill ok={Boolean(systemInfo?.music.humming.accessSecret)} label="ACR_ACCESS_SECRET" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Ads/monetization</p>
+                    <div className="flex flex-wrap gap-2">
+                      <StatusPill ok={Boolean(systemInfo?.music.adsense.client)} label="NEXT_PUBLIC_ADSENSE_CLIENT" />
+                      <StatusPill ok={Boolean(systemInfo?.music.adsense.slot)} label="NEXT_PUBLIC_ADSENSE_SLOT" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-spotify-light rounded-lg border border-white/5 p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 text-white">
+                  <CreditCard size={18} className="text-spotify-green" />
+                  <span className="font-semibold">PayPal payments</span>
+                </div>
+                {systemInfo?.paypal?.mode && (
+                  <div className="text-xs text-gray-300 bg-black/30 px-2 py-1 rounded-full border border-white/5">
+                    Mode: {systemInfo.paypal.mode}
+                  </div>
+                )}
+              </div>
+              {systemLoading ? (
+                <div className="flex items-center gap-2 text-gray-300">
+                  <Loader2 className="animate-spin" size={16} />
+                  Vérification PayPal...
+                </div>
+              ) : systemError ? (
+                <div className="flex items-center gap-2 text-red-200">
+                  <AlertTriangle size={16} />
+                  {systemError}
+                </div>
+              ) : (
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Client ID</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(systemInfo?.paypal.credentials.clientId || []).map((k) => (
+                        <StatusPill key={k.key} ok={k.present} label={k.key} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Client Secret</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(systemInfo?.paypal.credentials.clientSecret || []).map((k) => (
+                        <StatusPill key={k.key} ok={k.present} label={k.key} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Merchant email</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(systemInfo?.paypal.credentials.merchantEmail || []).map((k) => (
+                        <StatusPill key={k.key} ok={k.present} label={k.key} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {loading ? (
