@@ -112,8 +112,10 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.YOUTUBE_API_KEY
 
     if (!apiKey) {
-      // Fallback mock data when API key is missing
-      return NextResponse.json(buildSampleData(query))
+      return NextResponse.json(
+        { error: 'YOUTUBE_API_KEY is missing on the server' },
+        { status: 503 }
+      )
     }
 
     const allowedOrders = new Set(['relevance', 'date', 'rating', 'viewCount'])
@@ -132,10 +134,14 @@ export async function GET(request: NextRequest) {
       )}&maxResults=${safeMaxResults}${orderParam}&key=${apiKey}`
     )
 
-    const data = response.ok ? await response.json() : buildSampleData(query)
+    if (!response.ok) {
+      throw new Error('YouTube API request failed')
+    }
+
+    const data = await response.json()
 
     // Enrich with duration
-    if (response.ok && data.items && data.items.length > 0) {
+    if (data.items && data.items.length > 0) {
       const videoIds = data.items.map((item: any) => item.id.videoId).join(',')
       const detailsResponse = await fetch(
         `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoIds}&key=${apiKey}`
@@ -157,6 +163,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data)
   } catch (error) {
     console.error('YouTube search error:', error)
-    return NextResponse.json(buildSampleData(query))
+    return NextResponse.json({ error: 'Failed to search YouTube' }, { status: 500 })
   }
 }
