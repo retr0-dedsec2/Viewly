@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data)
   } catch (error) {
     console.error('YouTube popular error:', error)
+    // Fallback to sample data on error so the UI can still show tracks
     return NextResponse.json(SAMPLE_POPULAR)
   }
 }
