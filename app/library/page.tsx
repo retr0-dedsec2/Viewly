@@ -79,7 +79,7 @@ export default function LibraryPage() {
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
   const { currentTrack, playQueue } = usePlayer()
-  const showAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : false
+  const userHasAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : false
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -246,10 +246,11 @@ export default function LibraryPage() {
               </button>
             </div>
 
-            {showAds && (
+            {/* Only show ads when there is meaningful library content to comply with AdSense */}
+            {userHasAds && playlists.length > 0 && (
               <AdBanner onUpgradeClick={() => router.push('/subscriptions')} />
             )}
-            {showAds && <GoogleAd className="mb-6" />}
+            {userHasAds && playlists.length > 0 && <GoogleAd className="mb-6" />}
 
             {showCreateForm && (
               <div className="bg-spotify-light p-4 rounded-lg mb-4">

@@ -212,7 +212,7 @@ export default function SearchPage() {
     playQueue(results, index >= 0 ? index : 0)
   }
 
-  const showAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : true
+  const userHasAds = user ? (user.hasAds ?? user.subscriptionPlan === 'FREE') : false
 
   return (
     <>
@@ -308,8 +308,11 @@ export default function SearchPage() {
               </div>
               {intentNote && <p className="text-xs text-gray-400 mt-3">Focus: {intentNote}</p>}
 
-              {showAds && <AdBanner onUpgradeClick={() => router.push('/subscriptions')} />}
-              {showAds && <GoogleAd className="mb-6" />}
+              {/* Serve ads only when real search results exist to avoid thin-content ad placements */}
+              {userHasAds && results.length > 0 && (
+                <AdBanner onUpgradeClick={() => router.push('/subscriptions')} />
+              )}
+              {userHasAds && results.length > 0 && <GoogleAd className="mb-6" />}
             </div>
 
             {results.length > 0 ? (
