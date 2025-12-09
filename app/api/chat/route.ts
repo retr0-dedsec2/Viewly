@@ -485,10 +485,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Enhanced AI responses with YouTube integration
-    const messageLower = message.toLowerCase()
+  const messageLower = message.toLowerCase()
 
-    // Check if user wants to create a playlist
-    if (
+  // Help/guide intent
+  if (
+    messageLower.includes('help') ||
+    messageLower.includes('commands') ||
+    messageLower.includes('how do')
+  ) {
+    return NextResponse.json({
+      response:
+        "I can create playlists (\"make a workout playlist\"), search YouTube for songs (\"find songs by Dua Lipa\"), or recommend tracks based on your taste. Tell me a mood or artist and I'll take it from there.",
+    })
+  }
+
+  // Check if user wants to create a playlist
+  if (
       messageLower.includes('playlist') ||
       messageLower.includes('create') ||
       messageLower.includes('make')
@@ -498,7 +510,10 @@ export async function POST(request: NextRequest) {
         messageLower.includes('favorite') ||
         messageLower.includes('favourite') ||
         messageLower.includes('prefere') ||
-        messageLower.includes('préfér')
+        messageLower.includes('préféré') ||
+        messageLower.includes('prefer') ||
+        messageLower.includes('favorito') ||
+        messageLower.includes('favorita')
       const favoriteSeed = wantsFavorites && userId ? await buildFavoriteArtistSeed(userId) : null
 
       const playlistResponse = await handlePlaylistCreation(
@@ -519,6 +534,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user wants to search for music
+    if (
+      messageLower.includes('trending') ||
+      messageLower.includes('popular hits') ||
+      messageLower.includes('popular songs')
+    ) {
+      const trendQuery = 'trending music'
+      return NextResponse.json({
+        response: `I'll pull up what's trending right now. Want to start with today's top hits?`,
+        action: 'search',
+        query: trendQuery,
+      })
+    }
+
     if (
       messageLower.includes('search') ||
       messageLower.includes('find') ||
