@@ -9,49 +9,7 @@ export const dynamic = 'force-dynamic'
 
 const CACHE_TTL_MS = 1000 * 60 * 5 // 5 minutes
 const CACHE_MAX_ENTRIES = 50
-const searchCache = new Map<
-  string,
-  { data: any; expires: number }
->()
-
-function buildSampleData(query: string) {
-  const base = [
-    {
-      id: { videoId: 'sample-1' },
-      snippet: {
-        title: `${query} (live mix)`,
-        channelTitle: 'Sample Artist',
-        thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/kJQP7kiw5Fk/hqdefault.jpg' },
-        },
-      },
-      contentDetails: { duration: 'PT3M30S' },
-    },
-    {
-      id: { videoId: 'sample-2' },
-      snippet: {
-        title: `${query} (official audio)`,
-        channelTitle: 'Sample Artist',
-        thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/fRh_vgS2dFE/hqdefault.jpg' },
-        },
-      },
-      contentDetails: { duration: 'PT4M02S' },
-    },
-    {
-      id: { videoId: 'sample-3' },
-      snippet: {
-        title: `${query} (remix)`,
-        channelTitle: 'Sample Artist',
-        thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/OPf0YbXqDm0/hqdefault.jpg' },
-        },
-      },
-      contentDetails: { duration: 'PT2M58S' },
-    },
-  ]
-  return { items: base }
-}
+const searchCache = new Map<string, { data: any; expires: number }>()
 
 function getCache(key: string) {
   const cached = searchCache.get(key)
@@ -76,7 +34,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const rawQuery = searchParams.get('q') || ''
-    const maxResults = searchParams.get('maxResults') || '10'
+    const maxResults = searchParams.get('maxResults') || '12'
     const order = searchParams.get('order') || 'relevance'
 
     const { sanitized, isRejected } = sanitizeSearchQuery(rawQuery)
@@ -88,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
     query = sanitized
 
-    const safeMaxResults = Math.min(Math.max(parseInt(maxResults, 10) || 10, 1), 25)
+    const safeMaxResults = Math.min(Math.max(parseInt(maxResults, 10) || 12, 1), 25)
 
     // Log search to user history when authenticated
     try {
@@ -112,8 +70,10 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.YOUTUBE_API_KEY
 
     if (!apiKey) {
-      // Fallback mock data when API key is missing
-      return NextResponse.json(buildSampleData(query))
+      return NextResponse.json(
+        { error: 'YOUTUBE_API_KEY is missing on the server' },
+        { status: 503 }
+      )
     }
 
     const allowedOrders = new Set(['relevance', 'date', 'rating', 'viewCount'])
@@ -126,18 +86,35 @@ export async function GET(request: NextRequest) {
     }
 
     const orderParam = safeOrder === 'relevance' ? '' : `&order=${safeOrder}`
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&q=${encodeURIComponent(
-        query
-      )}&maxResults=${safeMaxResults}${orderParam}&key=${apiKey}`
-    )
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(
+      query
+    )}&maxResults=${safeMaxResults}${orderParam}&key=${apiKey}&videoCategoryId=10`
 
-    const data = response.ok ? await response.json() : buildSampleData(query)
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('YouTube search failed:', response.status, errorText)
+      return NextResponse.json(
+        {
+          error: 'YouTube API request failed',
+          status: response.status,
+          details: errorText,
+          query,
+        },
+        { status: 502 }
+      )
+    }
+
+    const data = await response.json()
 
     setCache(cacheKey, data)
     return NextResponse.json(data)
   } catch (error) {
     console.error('YouTube search error:', error)
-    return NextResponse.json(buildSampleData(query))
+    return NextResponse.json(
+      { error: 'Failed to search YouTube', details: (error as any)?.message || String(error) },
+      { status: 500 }
+    )
   }
 }
