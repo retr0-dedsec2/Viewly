@@ -14,48 +14,43 @@ const searchCache = new Map<
   { data: any; expires: number }
 >()
 
-const SAMPLE_DATA = {
-  items: [
+function buildSampleData(query: string) {
+  const base = [
     {
-      id: { videoId: 'kJQP7kiw5Fk' },
+      id: { videoId: 'sample-1' },
       snippet: {
-        title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
-        channelTitle: 'Luis Fonsi',
+        title: `${query} (live mix)`,
+        channelTitle: 'Sample Artist',
         thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/kJQP7kiw5Fk/hqdefault.jpg' },
+          high: { url: 'https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?w=300&h=300&fit=crop' },
         },
       },
-      contentDetails: {
-        duration: 'PT3M48S',
-      },
+      contentDetails: { duration: 'PT3M30S' },
     },
     {
-      id: { videoId: 'fRh_vgS2dFE' },
+      id: { videoId: 'sample-2' },
       snippet: {
-        title: 'Justin Bieber - Sorry (PURPOSE : The Movement)',
-        channelTitle: 'Justin Bieber',
+        title: `${query} (official audio)`,
+        channelTitle: 'Sample Artist',
         thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/fRh_vgS2dFE/hqdefault.jpg' },
+          high: { url: 'https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?w=300&h=300&fit=crop' },
         },
       },
-      contentDetails: {
-        duration: 'PT3M20S',
-      },
+      contentDetails: { duration: 'PT4M02S' },
     },
     {
-      id: { videoId: 'OPf0YbXqDm0' },
+      id: { videoId: 'sample-3' },
       snippet: {
-        title: 'Mark Ronson - Uptown Funk ft. Bruno Mars',
-        channelTitle: 'Mark Ronson',
+        title: `${query} (remix)`,
+        channelTitle: 'Sample Artist',
         thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/OPf0YbXqDm0/hqdefault.jpg' },
+          high: { url: 'https://images.unsplash.com/photo-1507878866276-a947ef722fee?w=300&h=300&fit=crop' },
         },
       },
-      contentDetails: {
-        duration: 'PT4M31S',
-      },
+      contentDetails: { duration: 'PT2M58S' },
     },
-  ],
+  ]
+  return { items: base }
 }
 
 function getCache(key: string) {
@@ -117,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     if (!apiKey) {
       // Fallback mock data when API key is missing
-      return NextResponse.json(SAMPLE_DATA)
+      return NextResponse.json(buildSampleData(query))
     }
 
     const allowedOrders = new Set(['relevance', 'date', 'rating', 'viewCount'])
@@ -136,7 +131,7 @@ export async function GET(request: NextRequest) {
       )}&maxResults=${safeMaxResults}${orderParam}&key=${apiKey}`
     )
 
-    const data = response.ok ? await response.json() : SAMPLE_DATA
+    const data = response.ok ? await response.json() : buildSampleData(query)
 
     // Enrich with duration
     if (response.ok && data.items && data.items.length > 0) {
@@ -161,9 +156,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data)
   } catch (error) {
     console.error('YouTube search error:', error)
-    return NextResponse.json(
-      // Serve sample data on error to keep the UI populated
-      SAMPLE_DATA
-    )
+    return NextResponse.json(buildSampleData(query))
   }
 }
