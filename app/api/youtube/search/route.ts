@@ -72,6 +72,7 @@ function setCache(key: string, data: any) {
 }
 
 export async function GET(request: NextRequest) {
+  let query = ''
   try {
     const searchParams = request.nextUrl.searchParams
     const rawQuery = searchParams.get('q') || ''
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       )
     }
-    const query = sanitized
+    query = sanitized
 
     const safeMaxResults = Math.min(Math.max(parseInt(maxResults, 10) || 10, 1), 25)
 
