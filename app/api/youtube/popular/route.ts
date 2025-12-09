@@ -67,8 +67,10 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.YOUTUBE_API_KEY
 
     if (!apiKey) {
-      // Return popular music videos as fallback
-      return NextResponse.json(SAMPLE_POPULAR)
+      return NextResponse.json(
+        { error: 'YOUTUBE_API_KEY is missing on the server' },
+        { status: 503 }
+      )
     }
 
     // Get popular music videos
@@ -76,7 +78,11 @@ export async function GET(request: NextRequest) {
       `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&maxResults=20&key=${apiKey}`
     )
 
-    const data = response.ok ? await response.json() : SAMPLE_POPULAR
+    if (!response.ok) {
+      throw new Error('YouTube API request failed')
+    }
+
+    const data = await response.json()
     popularCache = {
       data,
       expires: Date.now() + POPULAR_CACHE_TTL_MS,
@@ -84,8 +90,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data)
   } catch (error) {
     console.error('YouTube popular error:', error)
-    // Fallback to sample data on error so the UI can still show tracks
-    return NextResponse.json(SAMPLE_POPULAR)
+    return NextResponse.json(
+      { error: 'Failed to fetch popular videos' },
+      { status: 500 }
+    )
   }
 }
 
