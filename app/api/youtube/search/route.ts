@@ -134,25 +134,6 @@ export async function GET(request: NextRequest) {
 
     const data = response.ok ? await response.json() : buildSampleData(query)
 
-    // Enrich with duration
-    if (response.ok && data.items && data.items.length > 0) {
-      const videoIds = data.items.map((item: any) => item.id.videoId).join(',')
-      const detailsResponse = await fetch(
-        `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoIds}&key=${apiKey}`
-      )
-
-      if (detailsResponse.ok) {
-        const detailsData = await detailsResponse.json()
-        data.items = data.items.map((item: any) => {
-          const details = detailsData.items.find((d: any) => d.id === item.id.videoId)
-          return {
-            ...item,
-            contentDetails: details?.contentDetails,
-          }
-        })
-      }
-    }
-
     setCache(cacheKey, data)
     return NextResponse.json(data)
   } catch (error) {
