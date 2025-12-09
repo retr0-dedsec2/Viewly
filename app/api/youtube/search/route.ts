@@ -14,44 +14,6 @@ const searchCache = new Map<
   { data: any; expires: number }
 >()
 
-const SAMPLE_DATA = {
-  items: [
-    {
-      id: { videoId: 'kJQP7kiw5Fk' },
-      snippet: {
-        title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
-        channelTitle: 'Luis Fonsi',
-        thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/kJQP7kiw5Fk/hqdefault.jpg' },
-        },
-      },
-      contentDetails: { duration: 'PT4M42S' },
-    },
-    {
-      id: { videoId: 'fRh_vgS2dFE' },
-      snippet: {
-        title: 'Justin Bieber - Sorry (PURPOSE : The Movement)',
-        channelTitle: 'Justin Bieber',
-        thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/fRh_vgS2dFE/hqdefault.jpg' },
-        },
-      },
-      contentDetails: { duration: 'PT3M20S' },
-    },
-    {
-      id: { videoId: '3JZ4pnNtyxQ' },
-      snippet: {
-        title: 'Mark Ronson - Uptown Funk ft. Bruno Mars',
-        channelTitle: 'Mark Ronson',
-        thumbnails: {
-          high: { url: 'https://i.ytimg.com/vi/OPf0YbXqDm0/hqdefault.jpg' },
-        },
-      },
-      contentDetails: { duration: 'PT4M31S' },
-    },
-  ],
-}
-
 function getCache(key: string) {
   const cached = searchCache.get(key)
   if (cached && cached.expires > Date.now()) return cached.data
@@ -107,13 +69,29 @@ export async function GET(request: NextRequest) {
       console.error('Failed to log search history:', error)
     }
 
-    // YouTube Data API v3 endpoint
-    // Note: You'll need to add your YouTube API key to .env.local
     const apiKey = process.env.YOUTUBE_API_KEY
 
     if (!apiKey) {
-      // Fallback: Return mock data if API key is not configured
-      return NextResponse.json(SAMPLE_DATA)
+      // Fallback mock data when API key is missing
+      return NextResponse.json({
+        items: [
+          {
+            id: { videoId: 'dQw4w9WgXcQ' },
+            snippet: {
+              title: `${query} - Music Video`,
+              channelTitle: 'Artist Name',
+              thumbnails: {
+                high: {
+                  url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop',
+                },
+              },
+            },
+            contentDetails: {
+              duration: 'PT3M33S',
+            },
+          },
+        ],
+      })
     }
 
     const allowedOrders = new Set(['relevance', 'date', 'rating', 'viewCount'])
@@ -125,7 +103,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached)
     }
 
-    // Build YouTube API URL with order parameter
     const orderParam = safeOrder === 'relevance' ? '' : `&order=${safeOrder}`
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&q=${encodeURIComponent(
@@ -133,10 +110,14 @@ export async function GET(request: NextRequest) {
       )}&maxResults=${safeMaxResults}${orderParam}&key=${apiKey}`
     )
 
-    const data = response.ok ? await response.json() : SAMPLE_DATA
+    if (!response.ok) {
+      throw new Error('YouTube API request failed')
+    }
 
-    // Get video details including duration
-    if (response.ok && data.items && data.items.length > 0) {
+    const data = await response.json()
+
+    // Enrich with duration
+    if (data.items && data.items.length > 0) {
       const videoIds = data.items.map((item: any) => item.id.videoId).join(',')
       const detailsResponse = await fetch(
         `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoIds}&key=${apiKey}`
@@ -144,11 +125,8 @@ export async function GET(request: NextRequest) {
 
       if (detailsResponse.ok) {
         const detailsData = await detailsResponse.json()
-        // Merge duration info
         data.items = data.items.map((item: any) => {
-          const details = detailsData.items.find(
-            (d: any) => d.id === item.id.videoId
-          )
+          const details = detailsData.items.find((d: any) => d.id === item.id.videoId)
           return {
             ...item,
             contentDetails: details?.contentDetails,
@@ -162,8 +140,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('YouTube search error:', error)
     return NextResponse.json(
-      // Fallback to sample data on error so the UI can still show tracks
-      SAMPLE_DATA
+      { error: 'Failed to search YouTube' },
+      { status: 500 }
     )
   }
 }
