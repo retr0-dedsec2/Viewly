@@ -5,7 +5,7 @@
 const TAG_RE = /<[^>]*>?/g
 const DANGEROUS_PATTERN = /<|>|javascript:|data:text\/html|onerror=|onload=/i
 // Allow letters/numbers across locales without the Unicode regex flag to stay compatible with ES5 targets.
-const SAFE_QUERY_PATTERN = /^[A-Za-z0-9À-ÖØ-öø-ÿĀ-žẀ-ỹỲ-ỹ\s\-'&,!.?/()]+$/
+const SAFE_QUERY_PATTERN = /^[A-Za-z0-9À-ÖØ-öø-ÿĀ-žẀ-ỹỲ-ỹ\s\-'&,!.?:/()]+$/
 
 export function sanitizeSearchQuery(input: string) {
   const trimmed = input.trim()
