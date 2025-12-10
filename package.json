@@ -12,6 +12,7 @@
   "dependencies": {
     "@paypal/checkout-server-sdk": "^1.0.3",
     "@prisma/client": "^5.7.1",
+    "@vercel/analytics": "^1.6.1",
     "bcryptjs": "^2.4.3",
     "framer-motion": "^10.16.16",
     "jsonwebtoken": "^9.0.2",

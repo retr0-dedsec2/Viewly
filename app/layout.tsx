@@ -5,6 +5,7 @@ import { PlayerProvider } from '@/contexts/PlayerContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import Script from 'next/script'
+import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
   title: 'Viewly - AI Music Assistant',
@@ -40,8 +41,8 @@ export default function RootLayout({
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
 }
-
