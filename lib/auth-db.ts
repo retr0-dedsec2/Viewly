@@ -1,16 +1,21 @@
 import { prisma } from './prisma'
+import { calculateExpiryDate, enforceSubscriptionExpiry, resolveDurationMs } from './subscriptions'
 import bcrypt from 'bcryptjs'
 
 export async function findUserByEmail(email: string) {
-  return await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email },
   })
+  if (!user) return null
+  return enforceSubscriptionExpiry(user)
 }
 
 export async function findUserById(id: string) {
-  return await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id },
   })
+  if (!user) return null
+  return enforceSubscriptionExpiry(user)
 }
 
 export async function createUser(email: string, username: string, hashedPassword: string) {
@@ -44,9 +49,27 @@ export async function listAllUsers() {
   })
 }
 
-export async function updateUserSubscription(userId: string, plan: 'FREE' | 'PREMIUM') {
+export async function updateUserSubscription(
+  userId: string,
+  plan: 'FREE' | 'PREMIUM',
+  options?: { durationDays?: number; durationMonths?: number; extendExisting?: boolean },
+) {
   const isPremium = plan === 'PREMIUM'
-  const expiry = isPremium ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
+  const durationMs = resolveDurationMs({
+    durationDays: options?.durationDays,
+    durationMonths: options?.durationMonths,
+  })
+
+  const existing = await findUserById(userId)
+  const baseDate =
+    options?.extendExisting &&
+    existing?.subscriptionPlan === 'PREMIUM' &&
+    existing.subscriptionExpiresAt &&
+    existing.subscriptionExpiresAt.getTime() > Date.now()
+      ? existing.subscriptionExpiresAt
+      : new Date()
+
+  const expiry = isPremium ? calculateExpiryDate(durationMs, baseDate) : null
 
   return prisma.user.update({
     where: { id: userId },
@@ -93,4 +116,3 @@ export async function setTwoFactorEnabled(userId: string, enabled: boolean) {
     },
   })
 }
-

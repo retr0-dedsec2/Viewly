@@ -92,7 +92,10 @@ export default function AdminClient() {
     }
   }
 
-  const handleUpdateUser = async (targetId: string, updates: Partial<AdminUser>) => {
+  const handleUpdateUser = async (
+    targetId: string,
+    updates: Partial<AdminUser> & { durationMonths?: number; extendExisting?: boolean },
+  ) => {
     setSavingUserId(targetId)
     try {
       const token = getToken()
@@ -106,6 +109,8 @@ export default function AdminClient() {
           userId: targetId,
           role: updates.role,
           subscriptionPlan: updates.subscriptionPlan,
+          durationMonths: updates.durationMonths,
+          extendExisting: updates.extendExisting,
         }),
       })
 
@@ -337,6 +342,20 @@ export default function AdminClient() {
                     </select>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        handleUpdateUser(u.id, {
+                          subscriptionPlan: 'PREMIUM',
+                          durationMonths: 3,
+                          extendExisting: true,
+                        })
+                      }
+                      disabled={savingUserId === u.id}
+                      className="px-3 py-1 rounded-lg bg-spotify-green/20 text-spotify-green text-xs font-semibold hover:bg-spotify-green/30 disabled:opacity-50"
+                      title="Offrir ou prolonger 3 mois de Premium"
+                    >
+                      +3 mois
+                    </button>
                     {savingUserId === u.id ? (
                       <Loader2 className="animate-spin text-gray-300" size={18} />
                     ) : (

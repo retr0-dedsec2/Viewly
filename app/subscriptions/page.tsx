@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Crown, CheckCircle2, ShieldAlert } from 'lucide-react'
+import { Crown, CheckCircle2, Clock, ShieldAlert } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
@@ -74,6 +74,10 @@ export default function SubscriptionsPage() {
   const [latestPayment, setLatestPayment] = useState<PaymentInfo | null>(null)
   const { user, login, isAuthenticated } = useAuth()
   const router = useRouter()
+  const premiumExpiresAt = user?.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt) : null
+  const premiumDaysLeft = premiumExpiresAt
+    ? Math.max(0, Math.ceil((premiumExpiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -292,6 +296,15 @@ export default function SubscriptionsPage() {
               </div>
             </div>
             <p className="text-gray-300 max-w-3xl">{subscriptionCopy}</p>
+            {currentPlan === 'PREMIUM' && premiumExpiresAt && (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-sm text-gray-100">
+                <Clock size={16} className="text-spotify-green" />
+                <span>
+                  Premium active until {premiumExpiresAt.toLocaleDateString()}
+                  {premiumDaysLeft !== null ? ` · ${premiumDaysLeft} day${premiumDaysLeft === 1 ? '' : 's'} left` : ''}
+                </span>
+              </div>
+            )}
             {message && (
               <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-spotify-light text-gray-100 text-sm">
                 <ShieldAlert size={16} />

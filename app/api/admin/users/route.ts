@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/auth-tokens'
+import {
+  calculateExpiryDate,
+  enforceSubscriptionExpiry,
+  getUserWithActiveSubscription,
+  resolveDurationMs,
+} from '@/lib/subscriptions'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +39,19 @@ export async function GET(req: NextRequest) {
     },
   })
 
-  return NextResponse.json({ users })
+  const normalized = await Promise.all(users.map((user) => enforceSubscriptionExpiry(user as any)))
+  const safeUsers = normalized.map((u) => ({
+    id: u.id,
+    email: u.email,
+    username: u.username,
+    role: u.role,
+    subscriptionPlan: u.subscriptionPlan,
+    subscriptionExpiresAt: u.subscriptionExpiresAt,
+    hasAds: (u as any).hasAds,
+    createdAt: u.createdAt,
+  }))
+
+  return NextResponse.json({ users: safeUsers })
 }
 
 export async function PATCH(req: NextRequest) {
@@ -43,10 +61,21 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { userId, role, subscriptionPlan } = body
+  const { userId, role, subscriptionPlan, durationDays, durationMonths, extendExisting } = body
 
   if (!userId) {
     return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+  }
+  if (
+    (durationDays !== undefined && (typeof durationDays !== 'number' || durationDays <= 0)) ||
+    (durationMonths !== undefined && (typeof durationMonths !== 'number' || durationMonths <= 0))
+  ) {
+    return NextResponse.json({ error: 'Invalid duration' }, { status: 400 })
+  }
+
+  const existing = await getUserWithActiveSubscription(userId)
+  if (!existing) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   const updateData: any = {}
@@ -62,10 +91,16 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
     const isPremium = subscriptionPlan === 'PREMIUM'
+    const durationMs = resolveDurationMs({ durationDays, durationMonths })
+    const baseDate =
+      (extendExisting ?? true) &&
+      existing.subscriptionPlan === 'PREMIUM' &&
+      existing.subscriptionExpiresAt &&
+      existing.subscriptionExpiresAt.getTime() > Date.now()
+        ? existing.subscriptionExpiresAt
+        : new Date()
     updateData.subscriptionPlan = subscriptionPlan
-    updateData.subscriptionExpiresAt = isPremium
-      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      : null
+    updateData.subscriptionExpiresAt = isPremium ? calculateExpiryDate(durationMs, baseDate) : null
     updateData.hasAds = !isPremium
   }
 

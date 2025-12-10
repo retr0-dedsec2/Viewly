@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getPayPalClient, getCredentialStatus } from '@/lib/paypal'
 import { getAuthToken, setAuthCookie } from '@/lib/auth-tokens'
 import { PaymentStatus, SubscriptionPlan } from '@prisma/client'
+import { calculateExpiryDate, getUserWithActiveSubscription, resolveDurationMs } from '@/lib/subscriptions'
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +35,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Payment not completed' }, { status: 400 })
     }
 
-    const subscriptionExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    const existingUser = await getUserWithActiveSubscription(payload.userId)
+    if (!existingUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const durationMs = resolveDurationMs({ durationDays: 30 })
+    const baseDate =
+      existingUser.subscriptionPlan === 'PREMIUM' &&
+      existingUser.subscriptionExpiresAt &&
+      existingUser.subscriptionExpiresAt.getTime() > Date.now()
+        ? existingUser.subscriptionExpiresAt
+        : new Date()
+    const subscriptionExpiresAt = calculateExpiryDate(durationMs, baseDate)
 
     const updatedUser = await prisma.user.update({
       where: { id: payload.userId },
@@ -88,7 +101,7 @@ export async function POST(req: NextRequest) {
         hasAds: updatedUser.hasAds,
         createdAt: updatedUser.createdAt,
       },
-      message: 'Payment confirmed. Premium activated for 30 days.',
+      message: `Payment confirmed. Premium active until ${subscriptionExpiresAt.toLocaleDateString()}.`,
     })
     setAuthCookie(response, refreshedToken)
     return response

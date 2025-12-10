@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, generateToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken, setAuthCookie } from '@/lib/auth-tokens'
+import { calculateExpiryDate, getUserWithActiveSubscription, resolveDurationMs } from '@/lib/subscriptions'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,19 +18,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: {
-      id: true,
-      email: true,
-      username: true,
-      role: true,
-      subscriptionPlan: true,
-      subscriptionExpiresAt: true,
-      hasAds: true,
-      createdAt: true,
-    },
-  })
+  const user = await getUserWithActiveSubscription(payload.userId)
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -40,8 +29,19 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
   })
 
+  const subscription = {
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    role: user.role,
+    subscriptionPlan: user.subscriptionPlan,
+    subscriptionExpiresAt: user.subscriptionExpiresAt,
+    hasAds: user.hasAds,
+    createdAt: user.createdAt,
+  }
+
   return NextResponse.json({
-    subscription: user,
+    subscription,
     latestPayment: latestPayment
       ? {
           id: latestPayment.id,
@@ -62,15 +62,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { plan } = await req.json()
+    const { plan, durationDays, durationMonths, extendExisting } = await req.json()
     if (!['FREE', 'PREMIUM'].includes(plan)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
+    if (
+      (durationDays !== undefined && (typeof durationDays !== 'number' || durationDays <= 0)) ||
+      (durationMonths !== undefined && (typeof durationMonths !== 'number' || durationMonths <= 0))
+    ) {
+      return NextResponse.json({ error: 'Invalid duration' }, { status: 400 })
+    }
+
+    const user = await getUserWithActiveSubscription(payload.userId)
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
 
     const isPremium = plan === 'PREMIUM'
-    const subscriptionExpiresAt = isPremium
-      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      : null
+    const durationMs = resolveDurationMs({ durationDays, durationMonths })
+    const baseDate =
+      (extendExisting ?? true) &&
+      user.subscriptionPlan === 'PREMIUM' &&
+      user.subscriptionExpiresAt &&
+      user.subscriptionExpiresAt.getTime() > Date.now()
+        ? user.subscriptionExpiresAt
+        : new Date()
+    const subscriptionExpiresAt = isPremium ? calculateExpiryDate(durationMs, baseDate) : null
 
     const updatedUser = await prisma.user.update({
       where: { id: payload.userId },
@@ -103,7 +120,7 @@ export async function POST(req: NextRequest) {
         createdAt: updatedUser.createdAt,
       },
       message: isPremium
-        ? 'Subscription upgraded to Premium for 30 days.'
+        ? `Subscription upgraded to Premium until ${updatedUser.subscriptionExpiresAt?.toLocaleDateString()}.`
         : 'Switched to Free plan. Ads have been re-enabled.',
     })
     setAuthCookie(response, token)
