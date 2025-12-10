@@ -1,7 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Shield, Users, Crown, RefreshCcw, Check, Loader2, AlertTriangle, Music, CreditCard } from 'lucide-react'
+import {
+  Shield,
+  Users,
+  Crown,
+  RefreshCcw,
+  Check,
+  Loader2,
+  AlertTriangle,
+  Music,
+  CreditCard,
+  Clock,
+} from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
@@ -46,6 +57,9 @@ export default function AdminClient() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [systemLoading, setSystemLoading] = useState(false)
   const [systemError, setSystemError] = useState<string | null>(null)
+  const [customDuration, setCustomDuration] = useState<
+    Record<string, { months: string; days: string; extend: boolean }>
+  >({})
   const { user, isAuthenticated } = useAuth()
 
   useEffect(() => {
@@ -94,7 +108,7 @@ export default function AdminClient() {
 
   const handleUpdateUser = async (
     targetId: string,
-    updates: Partial<AdminUser> & { durationMonths?: number; extendExisting?: boolean },
+    updates: Partial<AdminUser> & { durationMonths?: number; durationDays?: number; extendExisting?: boolean },
   ) => {
     setSavingUserId(targetId)
     try {
@@ -110,6 +124,7 @@ export default function AdminClient() {
           role: updates.role,
           subscriptionPlan: updates.subscriptionPlan,
           durationMonths: updates.durationMonths,
+          durationDays: updates.durationDays,
           extendExisting: updates.extendExisting,
         }),
       })
@@ -290,7 +305,7 @@ export default function AdminClient() {
               <div className="grid grid-cols-6 gap-3 px-4 py-3 text-xs uppercase tracking-wide text-gray-400 border-b border-white/5">
                 <div className="col-span-2">Utilisateur</div>
                 <div>Email</div>
-                <div>Plan</div>
+                <div>Plan / Durée</div>
                 <div>Role</div>
                 <div>Actions</div>
               </div>
@@ -326,6 +341,82 @@ export default function AdminClient() {
                         : u.subscriptionPlan === 'FREE'
                         ? 'Ads enabled'
                         : 'Ads disabled'}
+                    </div>
+                    <div className="mt-2 space-y-1 bg-black/20 p-2 rounded-lg border border-white/5">
+                      <div className="flex items-center gap-2 text-xs text-gray-300">
+                        <Clock size={14} className="text-spotify-green" />
+                        <span>Durée personnalisée (mois/jours)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="mois"
+                          value={customDuration[u.id]?.months ?? ''}
+                          onChange={(e) =>
+                            setCustomDuration((prev) => ({
+                              ...prev,
+                              [u.id]: { ...(prev[u.id] || { days: '', months: '', extend: true }), months: e.target.value },
+                            }))
+                          }
+                          className="w-20 bg-spotify-gray text-white px-2 py-1 rounded-md text-xs"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="jours"
+                          value={customDuration[u.id]?.days ?? ''}
+                          onChange={(e) =>
+                            setCustomDuration((prev) => ({
+                              ...prev,
+                              [u.id]: { ...(prev[u.id] || { days: '', months: '', extend: true }), days: e.target.value },
+                            }))
+                          }
+                          className="w-20 bg-spotify-gray text-white px-2 py-1 rounded-md text-xs"
+                        />
+                        <label className="flex items-center gap-1 text-[11px] text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={customDuration[u.id]?.extend ?? true}
+                            onChange={(e) =>
+                              setCustomDuration((prev) => ({
+                                ...prev,
+                                [u.id]: { ...(prev[u.id] || { days: '', months: '', extend: true }), extend: e.target.checked },
+                              }))
+                            }
+                          />
+                          Cumuler
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const months = customDuration[u.id]?.months ? Number(customDuration[u.id]?.months) : undefined
+                            const days = customDuration[u.id]?.days ? Number(customDuration[u.id]?.days) : undefined
+                            handleUpdateUser(u.id, {
+                              subscriptionPlan: 'PREMIUM',
+                              durationMonths: months && months > 0 ? months : undefined,
+                              durationDays: days && days > 0 ? days : undefined,
+                              extendExisting: customDuration[u.id]?.extend ?? true,
+                            })
+                          }}
+                          disabled={savingUserId === u.id}
+                          className="px-3 py-1 rounded-md bg-spotify-green/20 text-spotify-green text-xs font-semibold hover:bg-spotify-green/30 disabled:opacity-50"
+                        >
+                          Appliquer
+                        </button>
+                        <button
+                          onClick={() =>
+                            setCustomDuration((prev) => ({
+                              ...prev,
+                              [u.id]: { months: '', days: '', extend: true },
+                            }))
+                          }
+                          className="px-2 py-1 rounded-md bg-transparent border border-white/10 text-gray-300 text-xs hover:border-white/30"
+                        >
+                          Clear
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div>
