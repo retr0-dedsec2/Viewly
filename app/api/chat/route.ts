@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/auth-tokens'
 import { normalizeTasteQuery } from '@/lib/taste-queries'
 import { buildTasteProfile } from '@/lib/taste-profile'
+import { getUserWithActiveSubscription } from '@/lib/subscriptions'
 
 export const dynamic = 'force-dynamic'
 
@@ -481,6 +482,8 @@ export async function POST(request: NextRequest) {
 
     // Get user ID from Authorization header or auth cookie
     let userId = null
+    let userPlan: 'FREE' | 'PREMIUM' = 'FREE'
+    let userSubscriptionExpiresAt: Date | null = null
     try {
       const token = getAuthToken(request)
       if (token) {
@@ -493,6 +496,19 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('Auth token verification failed:', error)
       // Continue without userId
+    }
+
+    // Fetch user to get subscription plan (and auto-downgrade expired)
+    if (userId) {
+      try {
+        const user = await getUserWithActiveSubscription(userId)
+        if (user) {
+          userPlan = user.subscriptionPlan
+          userSubscriptionExpiresAt = user.subscriptionExpiresAt ?? null
+        }
+      } catch (error) {
+        console.error('Failed to resolve user subscription', error)
+      }
     }
 
     // Get user context for personalized responses
@@ -563,6 +579,15 @@ export async function POST(request: NextRequest) {
       messageLower.includes('create') ||
       messageLower.includes('make')
     ) {
+      if (userPlan === 'FREE') {
+        return NextResponse.json({
+          response:
+            "L'IA avancée (playlists automatiques, recommandations) est réservée aux membres Premium. Passez à Premium pour créer des playlists illimitées et obtenir des réponses prioritaires.",
+          action: 'upgrade',
+          requiresAuth: true,
+          debug: { blockedReason: 'free-plan', userPlan },
+        })
+      }
       console.log(`Playlist creation request. UserId: ${userId ? 'Found' : 'Not found'}`)
       const requestedArtist = extractRequestedArtist(message)
       const artistSeed = requestedArtist ? buildArtistRequestSeed(requestedArtist) : null
@@ -628,6 +653,15 @@ export async function POST(request: NextRequest) {
       messageLower.includes('suggest') ||
       messageLower.includes('similar')
     ) {
+      if (userPlan === 'FREE') {
+        return NextResponse.json({
+          response:
+            "Les recommandations personnalisées sont limitées sur le plan Free. Passez Premium pour débloquer l'IA complète et des recommandations illimitées.",
+          action: 'upgrade',
+          requiresAuth: true,
+          debug: { blockedReason: 'free-plan', userPlan },
+        })
+      }
       let recommendationText = "Based on your preferences, I'd recommend:"
 
       if (userContext && userContext.likedSongs.length > 0) {
@@ -699,9 +733,11 @@ export async function POST(request: NextRequest) {
 
     // Default intelligent responses
     const responses = [
-      `I understand you're interested in "${message}". I can search YouTube, create playlists, or find recommendations. What would you like to do?`,
-      `Great! I can help you discover music. Should I search for "${message}" or find similar tracks?`,
-      `I'd love to help! I can search YouTube, recommend tracks based on your taste, or help you create playlists. What interests you?`,
+      `I understand you're interested in "${message}". I can search YouTube, ${userPlan === 'PREMIUM' ? 'create playlists, or find recommendations' : 'help you search tracks'}. What would you like to do?`,
+      `Great! I can help you discover music. Should I search for "${message}"${userPlan === 'PREMIUM' ? ' or find similar tracks' : ''}?`,
+      userPlan === 'PREMIUM'
+        ? `I'd love to help! I can search YouTube, recommend tracks based on your taste, or help you create playlists. What interests you?`
+        : `I can search YouTube and give quick suggestions. For playlists et recommandations avancées, passe en Premium.`,
       previousUserMessage
         ? `Earlier you mentioned "${previousUserMessage}". Should I keep going with that or switch to "${message}"?`
         : `Tell me a mood or artist and I'll find the right tracks. Want to start with "${message}"?`,
@@ -723,7 +759,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
-
-
-
