@@ -1,3 +1,4 @@
+// Simple in-memory rate limiter to cap YouTube calls per minute for search and music buckets.
 const WINDOW_MS = 60_000
 
 type Bucket = 'search' | 'music'
@@ -19,6 +20,7 @@ const musicLimit = parseLimit(
   defaultLimit
 )
 
+// Shared in-memory counters; resets when the server restarts.
 const quotaState: Record<Bucket, QuotaState> = {
   search: { windowStart: 0, used: 0, limit: defaultLimit },
   music: { windowStart: 0, used: 0, limit: musicLimit },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { consumeQuota, getQuotaSnapshot } from '@/lib/youtube-quota'
 
+// Minimal helper for building playable items when YouTube quota/errors occur.
 function msToIsoDuration(ms?: number) {
   if (!ms || ms <= 0) return 'PT0S'
   const totalSeconds = Math.round(ms / 1000)
@@ -81,6 +82,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Respect per-minute music quota; if exceeded, fall back to iTunes previews.
     const quota = consumeQuota('music')
     if (!quota.allowed) {
       const fallback = await fetchItunesFallback(20)

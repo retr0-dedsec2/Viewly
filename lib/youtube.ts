@@ -13,12 +13,14 @@ export function parseDuration(duration: string): number {
 }
 
 export function convertYouTubeToMusic(youtubeItem: any): any {
+  // Some sources (iTunes fallback) store playback metadata under `playback`.
   const playback = youtubeItem.playback || {}
   const previewUrl = playback.previewUrl || youtubeItem.snippet?.description || undefined
   const coverOverride =
     playback.cover ||
     playback.thumbnail ||
     ''
+  // iTunes previews should use audio preview URLs instead of forcing a bogus YouTube ID.
   const isITunesSource = playback.source === 'itunes'
 
   const resolvedVideoId = isITunesSource ? undefined : (youtubeItem.id?.videoId || youtubeItem.id)

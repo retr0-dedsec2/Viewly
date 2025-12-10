@@ -8,6 +8,7 @@ import { consumeQuota, getQuotaSnapshot } from '@/lib/youtube-quota'
 
 export const dynamic = 'force-dynamic'
 
+// Local in-memory cache to soften API errors and rate limiting.
 const CACHE_TTL_MS = 1000 * 60 * 5 // 5 minutes
 const CACHE_MAX_ENTRIES = 50
 const searchCache = new Map<string, { data: any; expires: number }>()
@@ -114,6 +115,7 @@ async function enrichWithYouTube(
       continue
     }
 
+    // Spend limited music quota to try and attach real YouTube video IDs for iTunes results.
     const quota = consumeQuota('music')
     if (!quota.allowed) {
       enriched.push(item)
@@ -248,7 +250,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached)
     }
 
-    // Enforce per-minute YouTube quota before calling the API
+    // Enforce per-minute YouTube quota before calling the API; bail to iTunes when limit is hit.
     const quota = consumeQuota('search')
     if (!quota.allowed) {
       const payload = await buildITunesResponse(query, safeMaxResults, apiKey, 'youtube_quota_exceeded')
