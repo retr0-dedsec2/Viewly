@@ -13,6 +13,15 @@ export function parseDuration(duration: string): number {
 }
 
 export function convertYouTubeToMusic(youtubeItem: any): any {
+  const playback = youtubeItem.playback || {}
+  const previewUrl = playback.previewUrl || youtubeItem.snippet?.description || undefined
+  const coverOverride =
+    playback.cover ||
+    playback.thumbnail ||
+    ''
+  const isITunesSource = playback.source === 'itunes'
+
+  const resolvedVideoId = isITunesSource ? undefined : (youtubeItem.id?.videoId || youtubeItem.id)
   return {
     id: youtubeItem.id?.videoId || youtubeItem.id,
     title: youtubeItem.snippet?.title || '',
@@ -25,8 +34,8 @@ export function convertYouTubeToMusic(youtubeItem: any): any {
       youtubeItem.snippet?.thumbnails?.high?.url ||
       youtubeItem.snippet?.thumbnails?.medium?.url ||
       youtubeItem.snippet?.thumbnails?.default?.url ||
-      '',
-    videoId: youtubeItem.id?.videoId || youtubeItem.id,
+      coverOverride,
+    url: previewUrl && (!youtubeItem.id?.videoId || isITunesSource) ? previewUrl : undefined,
+    videoId: resolvedVideoId,
   }
 }
-

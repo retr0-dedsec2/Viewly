@@ -4,6 +4,7 @@ import { getAuthToken } from '@/lib/auth-tokens'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { normalizeTasteQuery } from '@/lib/taste-queries'
+import { consumeQuota, getQuotaSnapshot } from '@/lib/youtube-quota'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,6 +99,84 @@ async function fetchITunesFallback(query: string, limit: number) {
   return { items, fallback: true, source: 'itunes' }
 }
 
+async function enrichWithYouTube(
+  items: any[],
+  apiKey: string | undefined,
+  maxAttempts = 5
+) {
+  if (!apiKey || !items.length) return items
+
+  const enriched: any[] = []
+  let attempts = 0
+  for (const item of items) {
+    if (attempts >= maxAttempts) {
+      enriched.push(item)
+      continue
+    }
+
+    const quota = consumeQuota('music')
+    if (!quota.allowed) {
+      enriched.push(item)
+      continue
+    }
+    attempts += 1
+
+    const title = item?.snippet?.title || ''
+    const artist = item?.snippet?.channelTitle || ''
+    const searchQuery = `${title} ${artist}`.trim() || title || artist
+    if (!searchQuery) {
+      enriched.push(item)
+      continue
+    }
+
+    const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(
+      searchQuery
+    )}&maxResults=1&videoCategoryId=10&key=${apiKey}`
+
+    try {
+      const ytRes = await fetch(ytUrl)
+      if (!ytRes.ok) {
+        enriched.push(item)
+        continue
+      }
+
+      const ytData = await ytRes.json()
+      const found = ytData?.items?.[0]
+      if (found?.id?.videoId) {
+        enriched.push({
+          ...item,
+          id: { videoId: found.id.videoId },
+          snippet: {
+            ...item.snippet,
+            thumbnails: found.snippet?.thumbnails || item.snippet?.thumbnails,
+            title: item.snippet?.title || found.snippet?.title,
+            channelTitle: item.snippet?.channelTitle || found.snippet?.channelTitle,
+          },
+          playback: { ...item.playback, source: 'youtube-enriched' },
+        })
+        continue
+      }
+    } catch (error) {
+      console.error('YouTube enrichment failed:', error)
+    }
+
+    enriched.push(item)
+  }
+
+  return enriched
+}
+
+async function buildITunesResponse(query: string, limit: number, apiKey: string | undefined, reason: string) {
+  const itunesData = await fetchITunesFallback(query, limit)
+  const items = await enrichWithYouTube(itunesData.items, apiKey)
+  return {
+    ...itunesData,
+    items,
+    fallbackReason: reason,
+    quota: getQuotaSnapshot('search'),
+  }
+}
+
 function getCache(key: string) {
   const cached = searchCache.get(key)
   if (cached && cached.expires > Date.now()) return cached.data
@@ -169,6 +248,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached)
     }
 
+    // Enforce per-minute YouTube quota before calling the API
+    const quota = consumeQuota('search')
+    if (!quota.allowed) {
+      const payload = await buildITunesResponse(query, safeMaxResults, apiKey, 'youtube_quota_exceeded')
+      setCache(cacheKey, payload)
+      return NextResponse.json(payload)
+    }
+
     const orderParam = safeOrder === 'relevance' ? '' : `&order=${safeOrder}`
     const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(
       query
@@ -188,9 +275,9 @@ export async function GET(request: NextRequest) {
 
       // Try iTunes as a fallback to avoid empty UI when YouTube quota is exceeded
       try {
-        const itunesData = await fetchITunesFallback(query, safeMaxResults)
-        setCache(cacheKey, itunesData)
-        return NextResponse.json(itunesData)
+        const payload = await buildITunesResponse(query, safeMaxResults, apiKey, 'youtube_error')
+        setCache(cacheKey, payload)
+        return NextResponse.json(payload)
       } catch (itunesError) {
         console.error('iTunes fallback failed:', itunesError)
       }
@@ -206,8 +293,8 @@ export async function GET(request: NextRequest) {
     console.error('YouTube search error:', error)
     // Try iTunes as last resort inside catch as well
     try {
-      const fallback = await fetchITunesFallback(query, 10)
-      return NextResponse.json(fallback)
+      const payload = await buildITunesResponse(query, 10, process.env.YOUTUBE_API_KEY, 'server_error')
+      return NextResponse.json(payload)
     } catch (itunesError) {
       console.error('iTunes fallback failed in catch:', itunesError)
     }
