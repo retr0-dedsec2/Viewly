@@ -43,11 +43,14 @@ export function middleware(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 30,
   })
 
+  const hasBearerAuth = Boolean(request.headers.get('authorization') || request.headers.get('Authorization'))
   const isProtectedApiCall =
     PROTECTED_METHODS.has(request.method) &&
     request.nextUrl.pathname.startsWith('/api')
 
-  if (isProtectedApiCall) {
+  // Skip CSRF checks for API calls that provide an Authorization header (mobile/SDK use case).
+  // Keep CSRF for browser flows that rely on cookies.
+  if (isProtectedApiCall && !hasBearerAuth) {
     const cookieToken = csrfToken
     const headerToken = request.headers.get(CSRF_HEADER_NAME)
 
