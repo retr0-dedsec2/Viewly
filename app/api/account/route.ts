@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { email, username, currentPassword, newPassword } = await req.json()
+    const { email, username, currentPassword, newPassword, avatar } = await req.json()
 
     const updateData: any = {}
 
@@ -27,6 +27,10 @@ export async function PATCH(req: NextRequest) {
 
     if (username) {
       updateData.username = username
+    }
+
+    if (avatar !== undefined) {
+      updateData.avatar = avatar?.trim() || null
     }
 
     if (newPassword) {

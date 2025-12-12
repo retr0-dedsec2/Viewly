@@ -34,6 +34,7 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [avatar, setAvatar] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savingAccount, setSavingAccount] = useState(false)
@@ -42,10 +43,10 @@ export default function ProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isPremium = user?.subscriptionPlan === 'PREMIUM'
-  const initials = useMemo(
-    () => (user?.username ? user.username.slice(0, 2).toUpperCase() : 'US'),
-    [user?.username]
-  )
+  const initials = useMemo(() => {
+    const name = user?.username || ''
+    return name ? name.slice(0, 2).toUpperCase() : 'US'
+  }, [user?.username])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -57,6 +58,7 @@ export default function ProfilePage() {
     if (user) {
       setUsername(user.username)
       setEmail(user.email)
+      setAvatar(user.avatar || '')
     }
   }, [user])
 
@@ -115,6 +117,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           username: username.trim() || undefined,
           email: email.trim() || undefined,
+          avatar: avatar.trim(),
           currentPassword: currentPassword || undefined,
           newPassword: newPassword || undefined,
         }),
@@ -161,11 +164,14 @@ export default function ProfilePage() {
 
           <div className="bg-spotify-light rounded-lg p-4 sm:p-6 lg:p-8 mb-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-6 lg:mb-8">
-              <Avatar.Root className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-spotify-green/20 border border-spotify-green/40 flex items-center justify-center overflow-hidden">
-                <Avatar.Fallback className="text-white font-bold text-xl">
-                  {initials}
-                </Avatar.Fallback>
-              </Avatar.Root>
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-spotify-green/20 border border-spotify-green/40 flex items-center justify-center overflow-hidden">
+                {avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatar} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white font-bold text-xl">{initials}</span>
+                )}
+              </div>
               <div className="text-center sm:text-left">
                 <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">{user.username}</h2>
                 <p className="text-gray-400 text-sm sm:text-base">{user.email}</p>
@@ -292,6 +298,15 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-2 text-white">
                       <UserIcon size={16} />
                       <span className="font-semibold">Profile</span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Avatar URL</label>
+                      <input
+                        value={avatar}
+                        onChange={(e) => setAvatar(e.target.value)}
+                        className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                        placeholder="https://..."
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Display name</label>
