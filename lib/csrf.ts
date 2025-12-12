@@ -1,48 +1,56 @@
+import crypto from 'node:crypto'
+import { NextRequest, NextResponse } from 'next/server'
+
 export const CSRF_COOKIE_NAME = 'csrf_token'
-export const CSRF_HEADER_NAME = 'X-CSRF-Token'
+export const CSRF_HEADER_NAME = 'x-csrf-token'
 
-function getCrypto(): Crypto | undefined {
-  const maybeCrypto = typeof globalThis !== 'undefined' ? (globalThis as any).crypto : undefined
-  if (!maybeCrypto) return undefined
-  if (typeof maybeCrypto.getRandomValues === 'function' || typeof maybeCrypto.randomUUID === 'function') {
-    return maybeCrypto as Crypto
+function generateToken() {
+  return crypto.randomUUID().replace(/-/g, '')
+}
+
+export function verifyCsrf(req: NextRequest) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return null
+
+  const csrfCookie = req.cookies.get(CSRF_COOKIE_NAME)?.value
+  const csrfHeader = req.headers.get(CSRF_HEADER_NAME)
+
+  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+    return new NextResponse(JSON.stringify({ error: 'Invalid CSRF token' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
-  return undefined
+
+  return null
 }
 
-// Use Web Crypto when available (middleware / client) to avoid Node-only APIs.
-export function createCsrfToken() {
-  const webCrypto = getCrypto()
-  if (webCrypto?.randomUUID) {
-    return webCrypto.randomUUID().replace(/-/g, '')
+export function ensureCsrfCookie(req: NextRequest, res: NextResponse) {
+  const existing = req.cookies.get(CSRF_COOKIE_NAME)?.value
+
+  if (!existing) {
+    const token = generateToken()
+    res.cookies.set({
+      name: CSRF_COOKIE_NAME,
+      value: token,
+      httpOnly: false,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    })
   }
-  if (webCrypto?.getRandomValues) {
-    const bytes = new Uint8Array(16)
-    webCrypto.getRandomValues(bytes)
-    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
-  }
-  // Fallback to Math.random (non-crypto) for environments without Web Crypto.
-  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+
+  return res
 }
 
-function getCookieValue(name: string) {
-  if (typeof document === 'undefined') return null
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
-  return match ? decodeURIComponent(match[1]) : null
-}
-
-export function getCsrfTokenFromCookie() {
-  return getCookieValue(CSRF_COOKIE_NAME)
-}
-
+// Client helper: attach CSRF header when cookie exists (no auto-gen here to avoid bypass).
 export function withCsrfHeader(headers: HeadersInit = {}) {
-  let token = getCsrfTokenFromCookie()
-
-  // If the token is missing on the client, generate and set one so the next call succeeds.
-  if (!token && typeof document !== 'undefined') {
-    token = createCsrfToken()
-    document.cookie = `${CSRF_COOKIE_NAME}=${token}; path=/; SameSite=Strict${location.protocol === 'https:' ? '; Secure' : ''}`
-  }
+  const token = typeof document !== 'undefined'
+    ? document.cookie
+        .split('; ')
+        .find((c) => c.startsWith(`${CSRF_COOKIE_NAME}=`))
+        ?.split('=')[1]
+    : undefined
 
   if (!token) return headers
 
@@ -51,8 +59,5 @@ export function withCsrfHeader(headers: HeadersInit = {}) {
     return headers
   }
 
-  return {
-    ...headers,
-    [CSRF_HEADER_NAME]: token,
-  }
+  return { ...headers, [CSRF_HEADER_NAME]: token }
 }

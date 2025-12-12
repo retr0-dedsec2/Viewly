@@ -10,12 +10,13 @@ type GoogleAdProps = {
 
 // Lightweight wrapper for AdSense that only renders when a client/slot is configured.
 export default function GoogleAd({ adSlot, className, format = 'auto' }: GoogleAdProps) {
-  const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT
-  const slot = adSlot || process.env.NEXT_PUBLIC_ADSENSE_SLOT
+  const adsEnabled = process.env.NEXT_PUBLIC_ENABLE_ADS === 'true'
+  const client = adsEnabled ? process.env.NEXT_PUBLIC_ADSENSE_CLIENT : undefined
+  const slot = adsEnabled ? adSlot || process.env.NEXT_PUBLIC_ADSENSE_SLOT : undefined
   const elementId = useId()
 
   useEffect(() => {
-    if (!client || !slot) return
+    if (!adsEnabled || !client || !slot) return
 
     // Inject AdSense script once per page load.
     if (!document.querySelector('script[data-adsbygoogle="yes"]')) {
@@ -35,9 +36,9 @@ export default function GoogleAd({ adSlot, className, format = 'auto' }: GoogleA
     } catch (error) {
       console.warn('Adsense push failed', error)
     }
-  }, [client, slot])
+  }, [adsEnabled, client, slot])
 
-  if (!client || !slot) return null
+  if (!adsEnabled || !client || !slot) return null
 
   return (
     <ins

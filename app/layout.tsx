@@ -4,7 +4,6 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { PlayerProvider } from '@/contexts/PlayerContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { LanguageProvider } from '@/contexts/LanguageContext'
-import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
@@ -17,23 +16,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const adsClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT
-
   return (
     <html lang="en">
       <head>
         <meta name="google-site-verification" content="ftF4Bd9DyJkxOCHWxiXMVBN9Hspys8S-FlbSabC2b3Y" />
       </head>
       <body>
-        {adsClient && (
-          <Script
-            id="google-adsense"
-            strategy="afterInteractive"
-            data-adsbygoogle="yes"
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsClient}`}
-            crossOrigin="anonymous"
-          />
-        )}
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>
