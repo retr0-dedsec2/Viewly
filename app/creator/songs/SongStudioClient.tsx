@@ -89,7 +89,9 @@ export default function SongStudioClient() {
         ),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Impossible de charger les chansons')
+      if (!res.ok) {
+        throw new Error(data.error || 'Impossible de charger les chansons')
+      }
       setSongs(data.songs || [])
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement')
@@ -118,7 +120,9 @@ export default function SongStudioClient() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Creation impossible')
+      if (!res.ok) {
+        throw new Error(data.error || 'Creation impossible')
+      }
 
       setSongs((prev) => [data.song, ...prev].slice(0, 30))
       setForm({
