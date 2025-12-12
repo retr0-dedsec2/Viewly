@@ -17,9 +17,7 @@ import {
   Lock,
 } from 'lucide-react'
 import { Toggle } from '@base-ui/react/toggle'
-import { Collapsible } from '@base-ui/react/collapsible'
 import { Avatar } from '@base-ui/react/avatar'
-import { AlertDialog } from '@base-ui/react/alert-dialog'
 import Sidebar from '@/components/Sidebar'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
@@ -270,12 +268,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <Collapsible.Root
-            id="account-settings"
-            open={accountOpen}
-            onOpenChange={setAccountOpen}
-            className="bg-spotify-light rounded-lg border border-white/5 p-4 sm:p-6"
-          >
+          <div id="account-settings" className="bg-spotify-light rounded-lg border border-white/5 p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">
                 <Settings size={18} />
@@ -284,123 +277,103 @@ export default function ProfilePage() {
                   <p className="text-xs text-gray-400">Email, display name, password</p>
                 </div>
               </div>
-              <Collapsible.Trigger className="text-sm text-spotify-green hover:text-green-400">
+              <button
+                onClick={() => setAccountOpen((open) => !open)}
+                className="text-sm text-spotify-green hover:text-green-400"
+              >
                 {accountOpen ? 'Masquer' : 'Afficher'}
-              </Collapsible.Trigger>
+              </button>
             </div>
 
-            <Collapsible.Content className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-black/20 rounded-lg border border-white/10 p-4 space-y-4">
-                  <div className="flex items-center gap-2 text-white">
-                    <UserIcon size={16} />
-                    <span className="font-semibold">Profile</span>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Display name</label>
-                    <input
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                    <div className="flex items-center gap-2">
-                      <Mail size={16} className="text-gray-400" />
+            {accountOpen && (
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="bg-black/20 rounded-lg border border-white/10 p-4 space-y-4">
+                    <div className="flex items-center gap-2 text-white">
+                      <UserIcon size={16} />
+                      <span className="font-semibold">Profile</span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Display name</label>
                       <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
                       />
                     </div>
-                  </div>
-                </div>
-
-                <div className="bg-black/20 rounded-lg border border-white/10 p-4 space-y-4">
-                  <div className="flex items-center gap-2 text-white">
-                    <Lock size={16} />
-                    <span className="font-semibold">Security</span>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Current password</label>
-                    <input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
-                      placeholder="Required to change password"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">New password</label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
-                      placeholder="Leave blank to keep current"
-                    />
-                  </div>
-                  <div className="text-xs text-gray-400 bg-black/20 border border-white/5 rounded-lg p-3 flex items-start gap-2">
-                    <ShieldCheck size={14} className="text-gray-300 mt-0.5" />
                     <div>
-                      <p className="font-semibold text-white mb-1">Keep your account secure</p>
-                      <p>Use at least 8 characters, with a mix of letters, numbers, and symbols.</p>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                      <div className="flex items-center gap-2">
+                        <Mail size={16} className="text-gray-400" />
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-black/20 rounded-lg border border-white/10 p-4 space-y-4">
+                    <div className="flex items-center gap-2 text-white">
+                      <Lock size={16} />
+                      <span className="font-semibold">Security</span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Current password</label>
+                      <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                        placeholder="Required to change password"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">New password</label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                        placeholder="Leave blank to keep current"
+                      />
+                    </div>
+                    <div className="text-xs text-gray-400 bg-black/20 border border-white/5 rounded-lg p-3 flex items-start gap-2">
+                      <ShieldCheck size={14} className="text-gray-300 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-white mb-1">Keep your account secure</p>
+                        <p>Use at least 8 characters, with a mix of letters, numbers, and symbols.</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap gap-3 justify-end">
-                <button
-                  onClick={handleSaveAccount}
-                  disabled={savingAccount}
-                  className="inline-flex items-center gap-2 bg-spotify-green text-black font-semibold px-4 py-2 rounded-lg hover:bg-green-500 active:scale-95 disabled:opacity-60"
-                >
-                  <Save size={16} />
-                  {savingAccount ? 'Saving...' : 'Save changes'}
-                </button>
+                <div className="flex flex-wrap gap-3 justify-end">
+                  <button
+                    onClick={handleSaveAccount}
+                    disabled={savingAccount}
+                    className="inline-flex items-center gap-2 bg-spotify-green text-black font-semibold px-4 py-2 rounded-lg hover:bg-green-500 active:scale-95 disabled:opacity-60"
+                  >
+                    <Save size={16} />
+                    {savingAccount ? 'Saving...' : 'Save changes'}
+                  </button>
 
-                <AlertDialog.Root>
-                  <AlertDialog.Trigger asChild>
-                    <button className="inline-flex items-center gap-2 bg-red-500/20 text-red-300 px-4 py-2 rounded-lg border border-red-500/30 hover:bg-red-500/30">
-                      <Trash2 size={16} />
-                      Delete account
-                    </button>
-                  </AlertDialog.Trigger>
-                  <AlertDialog.Portal>
-                    <AlertDialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
-                    <AlertDialog.Content className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                      <div className="bg-spotify-light border border-white/10 rounded-xl p-6 max-w-md w-full space-y-4">
-                        <div className="flex items-center gap-3 text-white">
-                          <AlertTriangle size={18} className="text-red-400" />
-                          <div>
-                            <AlertDialog.Title className="text-lg font-semibold">Delete account</AlertDialog.Title>
-                            <AlertDialog.Description className="text-sm text-gray-300">
-                              This action is not reversible. Your playlists and preferences will be removed.
-                            </AlertDialog.Description>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <AlertDialog.Cancel className="px-4 py-2 rounded-lg bg-white/5 text-white border border-white/10 hover:bg-white/10">
-                            Cancel
-                          </AlertDialog.Cancel>
-                          <AlertDialog.Action
-                            className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600"
-                            onClick={handleDelete}
-                          >
-                            Confirm delete
-                          </AlertDialog.Action>
-                        </div>
-                      </div>
-                    </AlertDialog.Content>
-                  </AlertDialog.Portal>
-                </AlertDialog.Root>
+                  <button
+                    onClick={() => {
+                      const ok = window.confirm('Delete your account? This cannot be undone.')
+                      if (ok) handleDelete()
+                    }}
+                    className="inline-flex items-center gap-2 bg-red-500/20 text-red-300 px-4 py-2 rounded-lg border border-red-500/30 hover:bg-red-500/30"
+                  >
+                    <Trash2 size={16} />
+                    Delete account
+                  </button>
+                </div>
               </div>
-            </Collapsible.Content>
-          </Collapsible.Root>
+            )}
+          </div>
 
           <div className="mt-6">
             <button
