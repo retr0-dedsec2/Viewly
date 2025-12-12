@@ -145,7 +145,9 @@ export default function SongStudioClient() {
     }))
   }
 
-  if (!allowed) return null
+  if (!allowed) {
+    return null
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-b from-spotify-dark via-spotify-gray to-black">
