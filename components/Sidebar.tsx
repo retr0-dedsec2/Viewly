@@ -135,21 +135,6 @@ export default function Sidebar() {
               </Link>
             </li>
           )}
-          {isAuthenticated && (
-            <li>
-              <Link
-                href="/account"
-                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                  isActive('/account')
-                    ? 'text-white bg-spotify-light'
-                    : 'text-gray-300 hover:text-white hover:bg-spotify-light'
-                }`}
-              >
-                <Settings size={22} />
-                <span className="font-medium">Account</span>
-              </Link>
-            </li>
-          )}
           {isAuthenticated && user?.role === 'ADMIN' && (
             <li>
               <Link

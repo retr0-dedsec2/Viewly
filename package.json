@@ -17,6 +17,7 @@
     "framer-motion": "^10.16.16",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.294.0",
+    "@base-ui/react": "^1.0.0",
     "next": "14.0.4",
     "nodemailer": "^6.10.1",
     "parse": "^3.5.1",

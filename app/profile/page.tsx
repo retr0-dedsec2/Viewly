@@ -1,27 +1,75 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { User, LogOut, Settings, Music, Crown, ShieldCheck } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import {
+  LogOut,
+  Settings,
+  Music,
+  Crown,
+  ShieldCheck,
+  Save,
+  AlertCircle,
+  CheckCircle2,
+  AlertTriangle,
+  Trash2,
+  Mail,
+  User as UserIcon,
+  Lock,
+} from 'lucide-react'
+import { Toggle } from '@base-ui/react/toggle'
+import { Collapsible } from '@base-ui/react/collapsible'
+import { Avatar } from '@base-ui/react/avatar'
+import { AlertDialog } from '@base-ui/react/alert-dialog'
 import Sidebar from '@/components/Sidebar'
 import MobileMenu from '@/components/MobileMenu'
 import MobileHeader from '@/components/MobileHeader'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { withCsrfHeader } from '@/lib/csrf'
+import { getToken } from '@/lib/auth-client'
 
 export default function ProfilePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [twoFactorUpdating, setTwoFactorUpdating] = useState(false)
   const [twoFactorError, setTwoFactorError] = useState('')
-  const { user, logout } = useAuth()
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [status, setStatus] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [savingAccount, setSavingAccount] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(true)
+  const { user, logout, login, isAuthenticated } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const isPremium = user?.subscriptionPlan === 'PREMIUM'
+  const initials = useMemo(
+    () => (user?.username ? user.username.slice(0, 2).toUpperCase() : 'US'),
+    [user?.username]
+  )
 
   useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       router.push('/login')
     }
-  }, [user, router])
+  }, [isAuthenticated, router])
+
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username)
+      setEmail(user.email)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (searchParams?.get('section') === 'account') {
+      const el = document.getElementById('account-settings')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+  }, [searchParams])
 
   const handleLogout = () => {
     logout()
@@ -54,6 +102,47 @@ export default function ProfilePage() {
     }
   }
 
+  const handleSaveAccount = async () => {
+    if (!user) return
+    setSavingAccount(true)
+    setError(null)
+    setStatus(null)
+    try {
+      const res = await fetch('/api/account', {
+        method: 'PATCH',
+        headers: withCsrfHeader({
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken() || ''}`,
+        }),
+        body: JSON.stringify({
+          username: username.trim() || undefined,
+          email: email.trim() || undefined,
+          currentPassword: currentPassword || undefined,
+          newPassword: newPassword || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Unable to update account')
+      }
+      setStatus(data.message || 'Account updated')
+      setCurrentPassword('')
+      setNewPassword('')
+      if (data.token && data.user) {
+        login(data.token, data.user)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Update failed')
+    } finally {
+      setSavingAccount(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    // Placeholder until backend delete is available
+    setStatus('Account deletion request acknowledged (no backend handler configured yet).')
+  }
+
   if (!user) {
     return null
   }
@@ -74,9 +163,11 @@ export default function ProfilePage() {
 
           <div className="bg-spotify-light rounded-lg p-4 sm:p-6 lg:p-8 mb-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-6 lg:mb-8">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-spotify-green rounded-full flex items-center justify-center flex-shrink-0">
-                <User size={40} className="sm:w-12 sm:h-12 text-white" />
-              </div>
+              <Avatar.Root className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-spotify-green/20 border border-spotify-green/40 flex items-center justify-center overflow-hidden">
+                <Avatar.Fallback className="text-white font-bold text-xl">
+                  {initials}
+                </Avatar.Fallback>
+              </Avatar.Root>
               <div className="text-center sm:text-left">
                 <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">{user.username}</h2>
                 <p className="text-gray-400 text-sm sm:text-base">{user.email}</p>
@@ -129,20 +220,25 @@ export default function ProfilePage() {
                   <div>
                     <p className="text-white font-medium">Two-factor authentication</p>
                     <p className="text-gray-400 text-sm">
-                      {user.twoFactorEnabled ? 'Enabled - email codes required at login' : 'Add a second step with email codes'}
-                    </p>
-                    {twoFactorError && (
-                      <p className="text-red-400 text-xs mt-1">{twoFactorError}</p>
-                    )}
-                  </div>
+                    {user.twoFactorEnabled ? 'Enabled - email codes required at login' : 'Add a second step with email codes'}
+                  </p>
+                  {twoFactorError && (
+                    <p className="text-red-400 text-xs mt-1">{twoFactorError}</p>
+                  )}
                 </div>
-                <button
-                  onClick={toggleTwoFactor}
+              </div>
+                <Toggle
+                  pressed={user.twoFactorEnabled}
+                  onPressedChange={() => toggleTwoFactor()}
                   disabled={twoFactorUpdating}
-                  className="text-spotify-green hover:text-green-400 disabled:opacity-50"
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold border ${
+                    user.twoFactorEnabled
+                      ? 'bg-green-500/20 text-green-200 border-green-500/40'
+                      : 'bg-white/5 text-white border-white/10'
+                  } disabled:opacity-60`}
                 >
                   {twoFactorUpdating ? 'Saving...' : user.twoFactorEnabled ? 'Disable' : 'Enable'}
-                </button>
+                </Toggle>
               </div>
 
               <div className="flex items-center justify-between p-4 bg-spotify-gray rounded-lg">
@@ -163,57 +259,148 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="bg-spotify-light rounded-lg p-8">
-            <h3 className="text-xl font-bold text-white mb-4">Account Information</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={user.username}
-                  disabled
-                  className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={user.email}
-                  disabled
-                  className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Role
-                  </label>
-                  <input
-                    type="text"
-                    value={user.role}
-                    disabled
-                    className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg uppercase tracking-wide"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Plan
-                  </label>
-                  <input
-                    type="text"
-                    value={user.subscriptionPlan}
-                    disabled
-                    className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg uppercase tracking-wide"
-                  />
-                </div>
-              </div>
+          {(status || error) && (
+            <div
+              className={`mb-4 flex items-center gap-2 px-4 py-3 rounded-lg ${
+                status ? 'bg-green-900/40 text-green-200' : 'bg-red-900/40 text-red-200'
+              } border border-white/5`}
+            >
+              {status ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+              <span>{status || error}</span>
             </div>
-          </div>
+          )}
+
+          <Collapsible.Root
+            id="account-settings"
+            open={accountOpen}
+            onOpenChange={setAccountOpen}
+            className="bg-spotify-light rounded-lg border border-white/5 p-4 sm:p-6"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white">
+                <Settings size={18} />
+                <div>
+                  <p className="font-semibold">Account parameters</p>
+                  <p className="text-xs text-gray-400">Email, display name, password</p>
+                </div>
+              </div>
+              <Collapsible.Trigger className="text-sm text-spotify-green hover:text-green-400">
+                {accountOpen ? 'Masquer' : 'Afficher'}
+              </Collapsible.Trigger>
+            </div>
+
+            <Collapsible.Content className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-black/20 rounded-lg border border-white/10 p-4 space-y-4">
+                  <div className="flex items-center gap-2 text-white">
+                    <UserIcon size={16} />
+                    <span className="font-semibold">Profile</span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Display name</label>
+                    <input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                    <div className="flex items-center gap-2">
+                      <Mail size={16} className="text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-black/20 rounded-lg border border-white/10 p-4 space-y-4">
+                  <div className="flex items-center gap-2 text-white">
+                    <Lock size={16} />
+                    <span className="font-semibold">Security</span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Current password</label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                      placeholder="Required to change password"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">New password</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                      placeholder="Leave blank to keep current"
+                    />
+                  </div>
+                  <div className="text-xs text-gray-400 bg-black/20 border border-white/5 rounded-lg p-3 flex items-start gap-2">
+                    <ShieldCheck size={14} className="text-gray-300 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-white mb-1">Keep your account secure</p>
+                      <p>Use at least 8 characters, with a mix of letters, numbers, and symbols.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 justify-end">
+                <button
+                  onClick={handleSaveAccount}
+                  disabled={savingAccount}
+                  className="inline-flex items-center gap-2 bg-spotify-green text-black font-semibold px-4 py-2 rounded-lg hover:bg-green-500 active:scale-95 disabled:opacity-60"
+                >
+                  <Save size={16} />
+                  {savingAccount ? 'Saving...' : 'Save changes'}
+                </button>
+
+                <AlertDialog.Root>
+                  <AlertDialog.Trigger asChild>
+                    <button className="inline-flex items-center gap-2 bg-red-500/20 text-red-300 px-4 py-2 rounded-lg border border-red-500/30 hover:bg-red-500/30">
+                      <Trash2 size={16} />
+                      Delete account
+                    </button>
+                  </AlertDialog.Trigger>
+                  <AlertDialog.Portal>
+                    <AlertDialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
+                    <AlertDialog.Content className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <div className="bg-spotify-light border border-white/10 rounded-xl p-6 max-w-md w-full space-y-4">
+                        <div className="flex items-center gap-3 text-white">
+                          <AlertTriangle size={18} className="text-red-400" />
+                          <div>
+                            <AlertDialog.Title className="text-lg font-semibold">Delete account</AlertDialog.Title>
+                            <AlertDialog.Description className="text-sm text-gray-300">
+                              This action is not reversible. Your playlists and preferences will be removed.
+                            </AlertDialog.Description>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <AlertDialog.Cancel className="px-4 py-2 rounded-lg bg-white/5 text-white border border-white/10 hover:bg-white/10">
+                            Cancel
+                          </AlertDialog.Cancel>
+                          <AlertDialog.Action
+                            className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600"
+                            onClick={handleDelete}
+                          >
+                            Confirm delete
+                          </AlertDialog.Action>
+                        </div>
+                      </div>
+                    </AlertDialog.Content>
+                  </AlertDialog.Portal>
+                </AlertDialog.Root>
+              </div>
+            </Collapsible.Content>
+          </Collapsible.Root>
 
           <div className="mt-6">
             <button
@@ -229,4 +416,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-

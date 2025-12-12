@@ -29,7 +29,7 @@ const templates: Array<{ label: string; description: string; values: Partial<Son
     values: { videoId: 'dQw4w9WgXcQ', title: 'Titre rapide', artist: 'Artiste' },
   },
   {
-    label: 'Audio hébergé',
+    label: 'Audio heberge',
     description: 'URL mp3 + cover optionnelle',
     values: {
       audioUrl: 'https://example.com/demo.mp3',
@@ -41,7 +41,7 @@ const templates: Array<{ label: string; description: string; values: Partial<Son
   },
   {
     label: 'Single',
-    description: 'Préremplir album en “Single”',
+    description: 'Preremplir album en "Single"',
     values: { album: 'Single' },
   },
 ]
@@ -118,7 +118,7 @@ export default function SongStudioClient() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Création impossible')
+      if (!res.ok) throw new Error(data.error || 'Creation impossible')
 
       setSongs((prev) => [data.song, ...prev].slice(0, 30))
       setForm({
@@ -229,7 +229,7 @@ export default function SongStudioClient() {
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-sm text-gray-200">
-                    Durée (sec)
+                    Duree (sec)
                     <input
                       type="number"
                       min={0}
@@ -272,7 +272,7 @@ export default function SongStudioClient() {
                 </div>
 
                 <p className="text-xs text-gray-400">
-                  Minimum : titre + artiste + (videoId ou audioUrl). Le slug et la page publique sont générés automatiquement.
+                  Minimum : titre + artiste + (videoId ou audioUrl). Le slug et la page publique sont generes automatiquement.
                 </p>
 
                 {error && (
@@ -287,7 +287,7 @@ export default function SongStudioClient() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-spotify-green text-black font-semibold hover:bg-green-600 transition-colors disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
-                  {saving ? 'Sauvegarde...' : 'Créer la chanson'}
+                  {saving ? 'Sauvegarde...' : 'Creer la chanson'}
                 </button>
               </form>
             </div>
@@ -303,7 +303,7 @@ export default function SongStudioClient() {
                   className="text-xs text-gray-300 hover:text-white underline"
                   disabled={loading}
                 >
-                  Rafraîchir
+                  Rafraichir
                 </button>
               </div>
 
@@ -313,7 +313,7 @@ export default function SongStudioClient() {
                   Chargement...
                 </div>
               ) : songs.length === 0 ? (
-                <p className="text-gray-400 text-sm">Aucune chanson ajoutée pour le moment.</p>
+                <p className="text-gray-400 text-sm">Aucune chanson ajoutee pour le moment.</p>
               ) : (
                 <div className="space-y-3">
                   {songs.map((song) => {
@@ -357,7 +357,7 @@ export default function SongStudioClient() {
               )}
               <div className="mt-4 text-xs text-gray-400 flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-spotify-green" />
-                Chaque entrée génère une page publique (`/song/<slug>`). Les admins/artistes peuvent itérer rapidement.
+                Chaque entree genere une page publique (`/song/<slug>`). Les admins/artistes peuvent iterer rapidement.
               </div>
             </div>
           </div>
