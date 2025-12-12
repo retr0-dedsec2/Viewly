@@ -363,7 +363,7 @@ export default function SongStudioClient() {
               )}
               <div className="mt-4 text-xs text-gray-400 flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-spotify-green" />
-                Chaque entree genere une page publique (`/song/<slug>`). Les admins/artistes peuvent iterer rapidement.
+                Chaque entree genere une page publique <code>/song/&lt;slug&gt;</code>. Les admins/artistes peuvent iterer rapidement.
               </div>
             </div>
           </div>
