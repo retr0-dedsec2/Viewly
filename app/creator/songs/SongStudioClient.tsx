@@ -336,7 +336,7 @@ export default function SongStudioClient() {
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-semibold truncate">{song.title}</p>
                           <p className="text-gray-400 text-xs truncate">
-                            {song.artist} • {song.album || 'Single'}
+                            {song.artist} - {song.album || 'Single'}
                           </p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
                             {song.videoId && <span>YT: {song.videoId}</span>}
