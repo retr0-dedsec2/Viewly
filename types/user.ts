@@ -3,7 +3,7 @@ export interface User {
   email: string
   username: string
   avatar?: string
-  role: 'USER' | 'ADMIN'
+  role: 'USER' | 'ADMIN' | 'ARTIST'
   subscriptionPlan: 'FREE' | 'PREMIUM'
   subscriptionExpiresAt?: string | null
   hasAds?: boolean
@@ -19,4 +19,3 @@ export interface Playlist {
   createdAt: string
   userId: string
 }
-

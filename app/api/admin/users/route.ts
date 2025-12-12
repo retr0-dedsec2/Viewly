@@ -80,7 +80,7 @@ export async function PATCH(req: NextRequest) {
 
   const updateData: any = {}
   if (role) {
-    if (!['USER', 'ADMIN'].includes(role)) {
+    if (!['USER', 'ADMIN', 'ARTIST'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
     }
     updateData.role = role

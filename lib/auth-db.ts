@@ -81,7 +81,7 @@ export async function updateUserSubscription(
   })
 }
 
-export async function updateUserRole(userId: string, role: 'USER' | 'ADMIN') {
+export async function updateUserRole(userId: string, role: 'USER' | 'ADMIN' | 'ARTIST') {
   return prisma.user.update({
     where: { id: userId },
     data: { role },

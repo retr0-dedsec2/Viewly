@@ -6,7 +6,7 @@ export interface TokenPayload {
   userId: string
   email: string
   username: string
-  role: 'USER' | 'ADMIN'
+  role: 'USER' | 'ADMIN' | 'ARTIST'
   subscriptionPlan: 'FREE' | 'PREMIUM'
 }
 
@@ -37,7 +37,7 @@ export const users: Array<{
   username: string
   password: string
   avatar?: string
-  role?: 'USER' | 'ADMIN'
+  role?: 'USER' | 'ADMIN' | 'ARTIST'
   subscriptionPlan?: 'FREE' | 'PREMIUM'
   createdAt: string
 }> = []
@@ -63,4 +63,3 @@ export function createUser(email: string, username: string, hashedPassword: stri
   users.push(user)
   return user
 }
-

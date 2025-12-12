@@ -24,7 +24,7 @@ type AdminUser = {
   id: string
   email: string
   username: string
-  role: 'USER' | 'ADMIN'
+  role: 'USER' | 'ADMIN' | 'ARTIST'
   subscriptionPlan: 'FREE' | 'PREMIUM'
   subscriptionExpiresAt?: string | null
   hasAds?: boolean
@@ -429,6 +429,7 @@ export default function AdminClient() {
                       disabled={savingUserId === u.id}
                     >
                       <option value="USER">USER</option>
+                      <option value="ARTIST">ARTIST</option>
                       <option value="ADMIN">ADMIN</option>
                     </select>
                   </div>

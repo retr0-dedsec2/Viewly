@@ -12,6 +12,7 @@ datasource db {
 
 enum Role {
   USER
+  ARTIST
   ADMIN
 }
 
@@ -48,6 +49,7 @@ model User {
   likedSongs LikedSong[]
   searchHistory SearchHistory[]
   payments   Payment[]
+  songs      Song[]
 
   @@map("users")
 }
@@ -131,3 +133,23 @@ model Payment {
   @@map("payments")
 }
 
+model Song {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  artist      String
+  album       String?
+  cover       String?
+  duration    Int?
+  videoId     String?
+  audioUrl    String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([createdById])
+  @@index([videoId])
+  @@map("songs")
+}
