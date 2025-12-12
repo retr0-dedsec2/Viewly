@@ -34,7 +34,8 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
-  const [avatar, setAvatar] = useState('')
+  const [avatarData, setAvatarData] = useState('')
+  const [avatarError, setAvatarError] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savingAccount, setSavingAccount] = useState(false)
@@ -58,7 +59,7 @@ export default function ProfilePage() {
     if (user) {
       setUsername(user.username)
       setEmail(user.email)
-      setAvatar(user.avatar || '')
+      setAvatarData(user.avatar || '')
     }
   }, [user])
 
@@ -117,7 +118,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           username: username.trim() || undefined,
           email: email.trim() || undefined,
-          avatar: avatar.trim(),
+          avatar: avatarData || '',
           currentPassword: currentPassword || undefined,
           newPassword: newPassword || undefined,
         }),
@@ -144,6 +145,22 @@ export default function ProfilePage() {
     setStatus('Account deletion request acknowledged (no backend handler configured yet).')
   }
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAvatarError(null)
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 1_000_000) {
+      setAvatarError('Avatar must be under 1MB')
+      return
+    }
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result?.toString() || ''
+      setAvatarData(result)
+    }
+    reader.readAsDataURL(file)
+  }
+
   if (!user) {
     return null
   }
@@ -165,9 +182,9 @@ export default function ProfilePage() {
           <div className="bg-spotify-light rounded-lg p-4 sm:p-6 lg:p-8 mb-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-6 lg:mb-8">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-spotify-green/20 border border-spotify-green/40 flex items-center justify-center overflow-hidden">
-                {avatar ? (
+                {avatarData ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatar} alt={user.username} className="w-full h-full object-cover" />
+                  <img src={avatarData} alt={user.username} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-white font-bold text-xl">{initials}</span>
                 )}
@@ -300,13 +317,14 @@ export default function ProfilePage() {
                       <span className="font-semibold">Profile</span>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Avatar URL</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Avatar upload (max 1MB)</label>
                       <input
-                        value={avatar}
-                        onChange={(e) => setAvatar(e.target.value)}
-                        className="w-full bg-spotify-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-spotify-green"
-                        placeholder="https://..."
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="w-full text-sm text-gray-200"
                       />
+                      {avatarError && <p className="text-xs text-red-300 mt-1">{avatarError}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Display name</label>

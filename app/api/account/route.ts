@@ -30,7 +30,15 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (avatar !== undefined) {
-      updateData.avatar = avatar?.trim() || null
+      if (avatar && typeof avatar === 'string') {
+        if (!avatar.startsWith('data:image/')) {
+          return NextResponse.json({ error: 'Invalid avatar format' }, { status: 400 })
+        }
+        if (Buffer.byteLength(avatar, 'utf8') > 2_000_000) {
+          return NextResponse.json({ error: 'Avatar too large (max ~2MB as base64)' }, { status: 413 })
+        }
+      }
+      updateData.avatar = avatar || null
     }
 
     if (newPassword) {
